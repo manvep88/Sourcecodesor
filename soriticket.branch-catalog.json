@@ -1,0 +1,876 @@
+{
+  "schema": "soriticket.branch-catalog",
+  "schemaVersion": 3,
+  "coverage": "partial - 67 entries: 48 historical entries from pages 39-40/82 (DET 983-1034) plus 19 additional branches requested by user, verified against listed sources; not a complete nationwide directory.",
+  "source": {
+    "title": "Directorio Tiendas Soriana Sep 2020",
+    "url": "https://www.organizacionsoriana.com/recursos/Directorio%20Tiendas%20Sep%202020.pdf",
+    "documentDate": "2020-09",
+    "totalPages": 82,
+    "verifiedPages": [
+      39,
+      40
+    ],
+    "officialSorianaSource": true,
+    "note": "Catálogo combinado: 48 filas históricas del Directorio Tiendas Soriana Sep 2020 (páginas 39-40) más 19 sucursales específicas. Para domicilios se priorizan fuentes oficiales y listados de establecimientos fechados; algunos datos son históricos y se documentan las discrepancias. No se afirma cobertura nacional completa.",
+    "verifiedDirectoryRange": "DET 983-1034 across PDF pages 39-40 (48 listed entries; absent DET numbers remain absent)",
+    "additionalSources": [
+      {
+        "title": "Buscador oficial de tiendas Soriana",
+        "url": "https://www.soriana.com/buscador-de-tiendas/",
+        "consultedAt": "2026-11-09",
+        "usedFor": [
+          "0252",
+          "0272",
+          "0692",
+          "0862",
+          "0960"
+        ]
+      },
+      {
+        "title": "Directorio de establecimientos Ualá - Soriana",
+        "url": "https://assets.ctfassets.net/6n252fx9hkkr/7ilqxpTALtb0JiIaRkO0c2/56ee0a932f8a707bd7e64df2b84b6258/Comisionistas_UAL%C3%83__Diciembre2025.pdf",
+        "documentDate": "2025-12",
+        "usedFor": [
+          "0599",
+          "0692",
+          "0862",
+          "0937",
+          "0960"
+        ]
+      },
+      {
+        "title": "Directorio de Corresponsales Banorte",
+        "url": "https://www.banorte.com/dam/jcr%3A21129972-e7b2-4f7d-8c34-b61f2ccd4006/Directorio_Corresponsales_30abr26.pdf",
+        "documentDate": "2026-04-30",
+        "usedFor": [
+          "0599"
+        ]
+      },
+      {
+        "title": "Gobierno del Estado de Querétaro - Bancos y tiendas 2025 por línea de captura",
+        "url": "https://www.queretaro.gob.mx/documents/20121/1032511/soriana.pdf/45b4700a-0b37-f4f2-313f-4e545b49391a?t=1736992403307",
+        "documentDate": "2025",
+        "usedFor": [
+          "0118",
+          "0267",
+          "0879"
+        ]
+      }
+    ]
+  },
+  "branches": [
+    {
+      "code": "0007",
+      "directoryCode": 7,
+      "name": "CONTRY",
+      "format": "HÍPER",
+      "addressLines": [
+        "Av. Eugenio Garza Sada 745, Col. Contry",
+        "Monterrey, Nuevo León, C.P. 64860"
+      ],
+      "state": "NUEVO LEÓN",
+      "source": "Directorio Tiendas Soriana Sep 2020, DET 7; dirección verificada en directorio oficial, p. 1",
+      "postalCode": "64860"
+    },
+    {
+      "code": "0014",
+      "directoryCode": 14,
+      "name": "SAN PEDRO",
+      "format": "HÍPER",
+      "addressLines": [
+        "Av. Humberto Lobo y Río Guadalquivir 520, Col. Del Valle",
+        "San Pedro Garza García, Nuevo León, C.P. 66220"
+      ],
+      "state": "NUEVO LEÓN",
+      "source": "Directorio Tiendas Soriana Sep 2020, DET 14",
+      "postalCode": "66220"
+    },
+    {
+      "code": "0061",
+      "directoryCode": 61,
+      "name": "CORDILLERAS",
+      "format": "HÍPER",
+      "addressLines": [
+        "Av. Manuel J. Clouthier 888, Col. Jardines Tepeyac",
+        "Zapopan, Jalisco, C.P. 45047"
+      ],
+      "state": "JALISCO",
+      "source": "Directorio Tiendas Soriana Sep 2020, DET 61",
+      "postalCode": "45047"
+    },
+    {
+      "code": "0118",
+      "name": "SAN JUAN DEL RIO",
+      "format": "HÍPER",
+      "addressLines": [
+        "Av. Río Moctezuma 268, Col. San Cayetano",
+        "San Juan del Río, Querétaro, C.P. 76807"
+      ],
+      "state": "QUERÉTARO",
+      "source": "Registro Soriana de establecimientos, ID 0118; Gobierno del Estado de Querétaro, directorio 2025",
+      "postalCode": "76807",
+      "note": "La dirección está respaldada por el directorio del Gobierno de Querétaro 2025; la asociación de la clave 0118 con esta sucursal fue proporcionada por el usuario."
+    },
+    {
+      "code": "0223",
+      "directoryCode": 223,
+      "name": "SENDERO SALTILLO",
+      "format": "HÍPER",
+      "addressLines": [
+        "Carretera a Los González 365, Col. Ex Hacienda San José de los Cerritos",
+        "Saltillo, Coahuila, C.P. 25203"
+      ],
+      "state": "COAHUILA",
+      "source": "Directorio Tiendas Soriana Sep 2020, DET 223",
+      "postalCode": "25203"
+    },
+    {
+      "code": "0241",
+      "directoryCode": 241,
+      "name": "SENDERO APODACA",
+      "format": "HÍPER",
+      "addressLines": [
+        "Av. La Concordia 800, Col. Los Ébanos, 9.º Sector",
+        "Apodaca, Nuevo León, C.P. 66612"
+      ],
+      "state": "NUEVO LEÓN",
+      "source": "Directorio Tiendas Soriana Sep 2020, DET 241",
+      "postalCode": "66612"
+    },
+    {
+      "code": "0245",
+      "directoryCode": 245,
+      "name": "SENDERO MERIDA",
+      "format": "HÍPER",
+      "addressLines": [
+        "Calle 14 No. 70, Plaza Sendero Mérida, Col. Chuminópolis",
+        "Mérida, Yucatán, C.P. 97158"
+      ],
+      "state": "YUCATÁN",
+      "source": "Directorio Tiendas Soriana Sep 2020, DET 245",
+      "postalCode": "97158"
+    },
+    {
+      "code": "0252",
+      "directoryCode": 252,
+      "name": "MIYANA",
+      "format": "HÍPER",
+      "addressLines": [
+        "Av. Ejército Nacional 769, Local 1, Col. Granada",
+        "Alcaldía Miguel Hidalgo, Ciudad de México, C.P. 11520"
+      ],
+      "state": "CIUDAD DE MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, DET 252; dirección y CP cotejados con buscador oficial Soriana",
+      "postalCode": "11520"
+    },
+    {
+      "code": "0267",
+      "directoryCode": 267,
+      "name": "CONSTITUYENTES",
+      "format": "HÍPER",
+      "addressLines": [
+        "Av. Ejército Republicano 148, Col. Carretas",
+        "Santiago de Querétaro, Querétaro, C.P. 76050"
+      ],
+      "state": "QUERÉTARO",
+      "source": "Directorio Tiendas Soriana Sep 2020, DET 267; Gobierno del Estado de Querétaro, directorio 2025",
+      "postalCode": "76050"
+    },
+    {
+      "code": "0272",
+      "directoryCode": 272,
+      "name": "GRAN TERRAZA COAPA",
+      "format": "HÍPER",
+      "addressLines": [
+        "Calzada Acoxpa 1666, Col. Ejidos de Villa Coapa",
+        "Alcaldía Tlalpan, Ciudad de México, C.P. 14390"
+      ],
+      "state": "CIUDAD DE MÉXICO",
+      "source": "Buscador oficial de tiendas Soriana, consultado 2026-11-09; el Directorio Sep 2020 (DET 272) consignaba Calzada Acoxpa 610",
+      "postalCode": "14390",
+      "note": "Se usa el domicilio más reciente publicado por Soriana (1666), no el número 610 del directorio de septiembre de 2020."
+    },
+    {
+      "code": "0312",
+      "directoryCode": 312,
+      "name": "PLAZA DEL SOL",
+      "format": "HÍPER",
+      "addressLines": [
+        "Centro Comercial Plaza del Sol, Edificio A, Local 1",
+        "Col. Ciudad del Sol, Zapopan, Jalisco, C.P. 45050"
+      ],
+      "state": "JALISCO",
+      "source": "Directorio Tiendas Soriana Sep 2020, DET 312",
+      "postalCode": "45050",
+      "note": "El directorio identifica el centro comercial, edificio y local; no publica calle ni número exterior adicionales."
+    },
+    {
+      "code": "0599",
+      "name": "TEZAL",
+      "format": "HÍPER",
+      "addressLines": [
+        "Carretera Transpeninsular Lic. Benito Juárez García 1360, Col. El Tezal",
+        "Los Cabos, Baja California Sur, C.P. 23454"
+      ],
+      "state": "BAJA CALIFORNIA SUR",
+      "source": "Directorio de establecimientos Ualá Soriana diciembre 2025 y Directorio de Corresponsales Banorte al 2026-04-30; la clave 0599 fue proporcionada por el usuario",
+      "postalCode": "23454",
+      "note": "La dirección está respaldada por listados 2025/2026; la asociación de clave 0599 con TEZAL es la clave proporcionada por el usuario."
+    },
+    {
+      "code": "0659",
+      "directoryCode": 659,
+      "name": "SENDERO LA FE",
+      "format": "HÍPER",
+      "addressLines": [
+        "Av. Miguel Alemán 789, esq. Av. Teléfono, Col. Zona Industrial",
+        "Apodaca, Nuevo León, C.P. 66600"
+      ],
+      "state": "NUEVO LEÓN",
+      "source": "Directorio Tiendas Soriana Sep 2020, DET 659",
+      "postalCode": "66600"
+    },
+    {
+      "code": "0683",
+      "directoryCode": 683,
+      "name": "VIA VALLEJO",
+      "format": "HÍPER",
+      "addressLines": [
+        "Calz. Vallejo 1090, Col. Santa Cruz de las Salinas",
+        "Alcaldía Azcapotzalco, Ciudad de México, C.P. 02340"
+      ],
+      "state": "CIUDAD DE MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, DET 683",
+      "postalCode": "02340"
+    },
+    {
+      "code": "0692",
+      "directoryCode": 692,
+      "name": "MEGA PILARES",
+      "format": "MEGA SORIANA",
+      "addressLines": [
+        "Pilares 541, Col. Del Valle",
+        "Alcaldía Benito Juárez, Ciudad de México, C.P. 03100"
+      ],
+      "state": "CIUDAD DE MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, DET 692 (PILARES); directorio Ualá de establecimientos Soriana diciembre 2025; buscador oficial Soriana",
+      "postalCode": "03100"
+    },
+    {
+      "code": "0862",
+      "name": "MEGA SAN JERÓNIMO",
+      "format": "MEGA SORIANA",
+      "addressLines": [
+        "Av. San Jerónimo 630",
+        "Alcaldía Álvaro Obregón, Ciudad de México, C.P. 01990"
+      ],
+      "state": "CIUDAD DE MÉXICO",
+      "source": "Directorio Ualá de establecimientos Soriana diciembre 2025 (MEGA FARMACIA SAN JERÓNIMO); buscador oficial de tiendas Soriana",
+      "postalCode": "01990",
+      "note": "El buscador oficial de Soriana publica Av. San Jerónimo 630, Pedregal de San Ángel, C.P. 01990; el listado Ualá de diciembre de 2025 indica San Jerónimo Lídice y C.P. 01900. Se usa la dirección del buscador oficial y se omite la colonia para no resolver la discrepancia por inferencia."
+    },
+    {
+      "code": "0879",
+      "name": "QUERÉTARO II",
+      "format": "HÍPER",
+      "addressLines": [
+        "Av. Fundición 25, Col. Parques Industriales",
+        "Querétaro, Querétaro, C.P. 76160"
+      ],
+      "state": "QUERÉTARO",
+      "source": "Gobierno del Estado de Querétaro, directorio 2025; nombre y clave 0879 proporcionados por el usuario",
+      "postalCode": "76160",
+      "note": "El directorio gubernamental 2025 identifica Querétaro II en Av. Fundición 25, Col. Parques Industriales. La clave 0879 fue proporcionada por el usuario. El Directorio oficial Soriana de septiembre de 2020 registraba DET 879 como PLAZA DEL PARQUE en Epigmenio González 25; las fuentes no permiten confirmar que ambos registros sean la misma tienda."
+    },
+    {
+      "code": "0937",
+      "directoryCode": 937,
+      "name": "MEGA COAPA",
+      "format": "MEGA SORIANA",
+      "addressLines": [
+        "Calle del Puente 186, Col. AMSA",
+        "Alcaldía Tlalpan, Ciudad de México, C.P. 14380"
+      ],
+      "state": "CIUDAD DE MÉXICO",
+      "source": "Directorio de establecimientos Soriana/Compartamos enero 2025 y directorio de corresponsales Banorte 2026",
+      "postalCode": "14380"
+    },
+    {
+      "code": "0960",
+      "directoryCode": 960,
+      "name": "MEGA GRAN SUR",
+      "format": "MEGA SORIANA",
+      "addressLines": [
+        "Av. del Imán 151, Col. Pedregal de Carrasco",
+        "Alcaldía Coyoacán, Ciudad de México, C.P. 04700"
+      ],
+      "state": "CIUDAD DE MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, DET 960; directorio Ualá de establecimientos Soriana diciembre 2025; buscador oficial Soriana",
+      "postalCode": "04700"
+    },
+    {
+      "code": "0983",
+      "directoryCode": 983,
+      "name": "CHICONAUTLA",
+      "format": "MERCADO",
+      "addressLines": [
+        "Av. Nacional S/N, esq. Circuito Cuauhtémoc y Herrería",
+        "Col. Santo Tomás Chiconautla, C.P. 55069",
+        "México"
+      ],
+      "state": "MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 983",
+      "postalCode": "55069"
+    },
+    {
+      "code": "0984",
+      "directoryCode": 984,
+      "name": "IRAPUATO ABASTOS",
+      "format": "MERCADO",
+      "addressLines": [
+        "Prolongación J. García #1505",
+        "Col. El Refugio de García"
+      ],
+      "state": "GUANAJUATO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 984"
+    },
+    {
+      "code": "0985",
+      "directoryCode": 985,
+      "name": "CUAUTLA LOS ARCOS",
+      "format": "MEGA SORIANA",
+      "addressLines": [
+        "Antigua Carretera México-Cuautla 4",
+        "Col. Postal, C.P. 62748, Cuautla, Morelos"
+      ],
+      "state": "MORELOS",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 985",
+      "postalCode": "62748"
+    },
+    {
+      "code": "0986",
+      "directoryCode": 986,
+      "name": "SAN LORENZO XALPA",
+      "format": "MERCADO",
+      "addressLines": [
+        "Av. San Lorenzo No. 2171",
+        "Col. San Juan Xalpa, Iztapalapa, C.P. 09850"
+      ],
+      "state": "CIUDAD DE MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 986",
+      "postalCode": "09850"
+    },
+    {
+      "code": "0987",
+      "directoryCode": 987,
+      "name": "REFUGIO",
+      "format": "HÍPER",
+      "addressLines": [
+        "Blvd. El Refugio 22245",
+        "Col. El Florido 4, C.P. 22245, Tijuana, Baja California"
+      ],
+      "state": "BAJA CALIFORNIA",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 987",
+      "postalCode": "22245"
+    },
+    {
+      "code": "0988",
+      "directoryCode": 988,
+      "name": "TEOLOYUCÁN",
+      "format": "MERCADO",
+      "addressLines": [
+        "Av. del Lago No. 2",
+        "Bo. Tepanquiáhuac, Teoloyucan"
+      ],
+      "state": "MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 988"
+    },
+    {
+      "code": "0989",
+      "directoryCode": 989,
+      "name": "NUEVO VALLARTA",
+      "format": "MEGA SORIANA",
+      "addressLines": [
+        "Carretera Tepic-Puerto Vallarta km 144, No. 1297 Sur",
+        "Col. Flamingos Club Residencial, C.P. 63732"
+      ],
+      "state": "NAYARIT",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 989",
+      "postalCode": "63732"
+    },
+    {
+      "code": "0992",
+      "directoryCode": 992,
+      "name": "CALAFIA",
+      "format": "HÍPER",
+      "addressLines": [
+        "Calz. Lic. Adolfo López Mateos 1100",
+        "Col. Zona Industrial, C.P. 21010, Mexicali, Baja California"
+      ],
+      "state": "BAJA CALIFORNIA",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 992",
+      "postalCode": "21010"
+    },
+    {
+      "code": "0993",
+      "directoryCode": 993,
+      "name": "ANÁHUAC",
+      "format": "HÍPER",
+      "addressLines": [
+        "Calz. Anáhuac 1301",
+        "Col. Residencial Casa Magna, C.P. 21380, Mexicali, Baja California"
+      ],
+      "state": "BAJA CALIFORNIA",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 993",
+      "postalCode": "21380"
+    },
+    {
+      "code": "0994",
+      "directoryCode": 994,
+      "name": "TRANSPENINSULAR",
+      "format": "HÍPER",
+      "addressLines": [
+        "Carretera Transpeninsular 100",
+        "Col. Carlos Pacheco, C.P. 22890, Ensenada, Baja California"
+      ],
+      "state": "BAJA CALIFORNIA",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 994",
+      "postalCode": "22890"
+    },
+    {
+      "code": "0996",
+      "directoryCode": 996,
+      "name": "CITADINA EL PUEBLITO",
+      "format": "MEGA SORIANA",
+      "addressLines": [
+        "Paseo Constituyentes No. 1601",
+        "Col. Los Pájaros, C.P. 76900"
+      ],
+      "state": "QUERÉTARO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 996",
+      "postalCode": "76900"
+    },
+    {
+      "code": "0997",
+      "directoryCode": 997,
+      "name": "GRAN PATIO TOLUCA",
+      "format": "MEGA SORIANA",
+      "addressLines": [
+        "Av. Miguel Hidalgo y Costilla No. 1350",
+        "Col. Barrio San Sebastián, C.P. 50090"
+      ],
+      "state": "MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 997",
+      "postalCode": "50090"
+    },
+    {
+      "code": "0998",
+      "directoryCode": 998,
+      "name": "LA VILLA TEPEYAC",
+      "format": "MEGA SORIANA",
+      "addressLines": [
+        "Prolongación Calzada de los Misterios 62",
+        "Col. Guadalupe Tepeyac, Gustavo A. Madero, C.P. 7840"
+      ],
+      "state": "CIUDAD DE MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 998",
+      "postalCode": "7840",
+      "note": "El código postal aparece como 7840 en el directorio; se conserva tal como está impreso."
+    },
+    {
+      "code": "0999",
+      "directoryCode": 999,
+      "name": "LEÓN INSURGENTES",
+      "format": "MEGA SORIANA",
+      "addressLines": [
+        "Prolongación Blvd. José María Morelos 530, esq. Paseo de los Insurgentes",
+        "Col. Granjas del Palote, C.P. 37130, León"
+      ],
+      "state": "GUANAJUATO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 999",
+      "postalCode": "37130"
+    },
+    {
+      "code": "1001",
+      "directoryCode": 1001,
+      "name": "TORREÓN",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Av. Revolución y Blvd. Saltillo 400",
+        "Fracc. Los Ángeles, C.P. 27267"
+      ],
+      "state": "COAHUILA DE ZARAGOZA",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 1001",
+      "postalCode": "27267"
+    },
+    {
+      "code": "1002",
+      "directoryCode": 1002,
+      "name": "MONCLOVA",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Calle Huemac No. 1101",
+        "Col. Anáhuac, C.P. 25750"
+      ],
+      "state": "COAHUILA DE ZARAGOZA",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 1002",
+      "postalCode": "25750"
+    },
+    {
+      "code": "1003",
+      "directoryCode": 1003,
+      "name": "CHIHUAHUA",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Periférico de la Juventud, esq. Av. Francisco Villa"
+      ],
+      "state": "CHIHUAHUA",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 1003"
+    },
+    {
+      "code": "1004",
+      "directoryCode": 1004,
+      "name": "SALTILLO",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Blvd. Luis Echeverría"
+      ],
+      "state": "COAHUILA DE ZARAGOZA",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 1004"
+    },
+    {
+      "code": "1005",
+      "directoryCode": 1005,
+      "name": "PACHUCA",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Blvd. Nuevo Hidalgo"
+      ],
+      "state": "HIDALGO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 1005"
+    },
+    {
+      "code": "1006",
+      "directoryCode": 1006,
+      "name": "VILLAHERMOSA",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Carlos Pellicer Cámara, esq. Paseo Uzumacinta"
+      ],
+      "state": "TABASCO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1006"
+    },
+    {
+      "code": "1007",
+      "directoryCode": 1007,
+      "name": "SAN JERÓNIMO",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Av. José Garza Ramírez y Av. Rogelio Cantú"
+      ],
+      "state": "NUEVO LEÓN",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1007"
+    },
+    {
+      "code": "1008",
+      "directoryCode": 1008,
+      "name": "TUXTLA GUTIÉRREZ",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Blvd. Andrés Serra Rojas, esq. con Blvd. Albino Corzo"
+      ],
+      "state": "CHIAPAS",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1008"
+    },
+    {
+      "code": "1009",
+      "directoryCode": 1009,
+      "name": "COLIMA",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Av. María Ahumada de Gómez, esq. Fco. Cárdenas Barajas"
+      ],
+      "state": "COLIMA",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1009"
+    },
+    {
+      "code": "1010",
+      "directoryCode": 1010,
+      "name": "SAN LUCAS",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Blvd. Lázaro Cárdenas, esq. Paseo del Pescador"
+      ],
+      "state": "BAJA CALIFORNIA SUR",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1010"
+    },
+    {
+      "code": "1011",
+      "directoryCode": 1011,
+      "name": "TAMPICO",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Av. Ejército Mexicano y Diagonal Norte-Sur"
+      ],
+      "state": "TAMAULIPAS",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1011"
+    },
+    {
+      "code": "1012",
+      "directoryCode": 1012,
+      "name": "LA PAZ",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Blvd. Forjadores de Sudcalifornia, esq. Luis Donaldo Colosio"
+      ],
+      "state": "BAJA CALIFORNIA SUR",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1012"
+    },
+    {
+      "code": "1013",
+      "directoryCode": 1013,
+      "name": "NUEVO LAREDO",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Av. Reforma y 15 de Septiembre"
+      ],
+      "state": "TAMAULIPAS",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1013"
+    },
+    {
+      "code": "1014",
+      "directoryCode": 1014,
+      "name": "REYNOSA",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Blvd. Hidalgo y Fuentes de Diana, km 101"
+      ],
+      "state": "TAMAULIPAS",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1014"
+    },
+    {
+      "code": "1015",
+      "directoryCode": 1015,
+      "name": "DURANGO",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Av. Heroico Colegio Militar y Av. 20 de Noviembre"
+      ],
+      "state": "DURANGO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1015"
+    },
+    {
+      "code": "1016",
+      "directoryCode": 1016,
+      "name": "CANCÚN",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Av. Andrés Quintana Roo entre Av. Kohunlich, calle Farallón y Av. Itzamal"
+      ],
+      "state": "QUINTANA ROO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1016"
+    },
+    {
+      "code": "1017",
+      "directoryCode": 1017,
+      "name": "COACALCO",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Av. Vial López Portillo"
+      ],
+      "state": "MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1017"
+    },
+    {
+      "code": "1018",
+      "directoryCode": 1018,
+      "name": "IXTAPALUCA",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Carretera Federal México-Cuautla km 32.5"
+      ],
+      "state": "MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1018"
+    },
+    {
+      "code": "1019",
+      "directoryCode": 1019,
+      "name": "GÓMEZ PALACIO",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Boulevard Miguel Alemán"
+      ],
+      "state": "DURANGO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1019"
+    },
+    {
+      "code": "1020",
+      "directoryCode": 1020,
+      "name": "TOLUCA",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Blvd. Aeropuerto Miguel Alemán No. 55, esq. Paseo Tollocan"
+      ],
+      "state": "MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1020"
+    },
+    {
+      "code": "1021",
+      "directoryCode": 1021,
+      "name": "LINCOLN",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Abraham Lincoln 3501-A"
+      ],
+      "state": "NUEVO LEÓN",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1021",
+      "note": "El renglón de dirección queda cortado en el extracto del PDF después de “entre José Eleuterio Gzz. y”; no se completa por inferencia."
+    },
+    {
+      "code": "1022",
+      "directoryCode": 1022,
+      "name": "HERMOSILLO",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Blvd. Río Sonora Nte. No. 188, esq. con Blvd. Solidaridad"
+      ],
+      "state": "SONORA",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1022"
+    },
+    {
+      "code": "1023",
+      "directoryCode": 1023,
+      "name": "CULIACÁN",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Blvd. Universitarios No. 435 pte., esq. Blvd. Enrique Sánchez"
+      ],
+      "state": "SINALOA",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1023"
+    },
+    {
+      "code": "1024",
+      "directoryCode": 1024,
+      "name": "PLAYA DEL CARMEN",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Carretera Federal Chetumal-Cancún No. 2100"
+      ],
+      "state": "QUINTANA ROO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1024"
+    },
+    {
+      "code": "1025",
+      "directoryCode": 1025,
+      "name": "SAN JOSÉ VIEJO",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Carretera Transpeninsular San José-Aeropuerto km 39"
+      ],
+      "state": "BAJA CALIFORNIA SUR",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1025"
+    },
+    {
+      "code": "1026",
+      "directoryCode": 1026,
+      "name": "ECATEPEC",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Av. Vía Morelos 351-A, esq. Av. Circunvalación S/N"
+      ],
+      "state": "MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1026"
+    },
+    {
+      "code": "1027",
+      "directoryCode": 1027,
+      "name": "SANTA MÓNICA",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Carretera México-Querétaro km 23.5 S/N"
+      ],
+      "state": "MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1027"
+    },
+    {
+      "code": "1028",
+      "directoryCode": 1028,
+      "name": "QUERÉTARO",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Av. Prolongación Zaragoza No. 62-A"
+      ],
+      "state": "QUERÉTARO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1028"
+    },
+    {
+      "code": "1029",
+      "directoryCode": 1029,
+      "name": "UNIVERSIDAD",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Universidad No. 103, Col. Residencial El Roble"
+      ],
+      "state": "NUEVO LEÓN",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1029"
+    },
+    {
+      "code": "1030",
+      "directoryCode": 1030,
+      "name": "REVOLUCIÓN",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Revolución, cruce con José Alvarado No. 1009"
+      ],
+      "state": "NUEVO LEÓN",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1030"
+    },
+    {
+      "code": "1031",
+      "directoryCode": 1031,
+      "name": "PUEBLA",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Blvd. 5 de Mayo No. 418, Col. Xanenetla"
+      ],
+      "state": "PUEBLA",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1031"
+    },
+    {
+      "code": "1032",
+      "directoryCode": 1032,
+      "name": "PUERTA DE HIERRO (LINCOLN)",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Av. Abraham Lincoln No. 4001-A, C.P. 64346"
+      ],
+      "state": "NUEVO LEÓN",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1032",
+      "postalCode": "64346"
+    },
+    {
+      "code": "1033",
+      "directoryCode": 1033,
+      "name": "PIEDRAS NEGRAS",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Blvd. República y Lib. Manuel Pérez Treviño No. 1800"
+      ],
+      "state": "COAHUILA DE ZARAGOZA",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1033"
+    },
+    {
+      "code": "1034",
+      "directoryCode": 1034,
+      "name": "VÍA VALLEJO",
+      "format": "CITY CLUB",
+      "addressLines": [
+        "Calzada Vallejo No. 250, Col. Santa Cruz de las Salinas, C.P. 02340"
+      ],
+      "state": "CIUDAD DE MÉXICO",
+      "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1034",
+      "postalCode": "02340"
+    }
+  ]
+}

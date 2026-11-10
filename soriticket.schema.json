@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://soriticket.local/schema/soriticket.schema.json",
+  "title": "SORITICKET Archive",
+  "description": "Formato de intercambio de tickets obtenidos desde la vista previa de compra. No representa un CFDI.",
+  "type": "object",
+  "required": ["schema", "schemaVersion", "application", "exportedAt", "tickets"],
+  "properties": {
+    "schema": { "const": "soriticket.archive" },
+    "schemaVersion": { "const": 1 },
+    "application": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "exportedAt": { "type": "string", "format": "date-time" },
+    "source": { "type": "string" },
+    "batch": {
+      "type": "object",
+      "properties": {
+        "sourceFile": { "type": "string" },
+        "importedAt": { "type": "string" },
+        "defaultBranch": { "type": "string" },
+        "defaultPurchaseDate": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "captured": { "type": "integer", "minimum": 0 },
+        "incomplete": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "tickets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ticket" }
+    }
+  },
+  "$defs": {
+    "nullableNumber": { "type": ["number", "null"] },
+    "moneyValue": {
+      "type": "object",
+      "properties": {
+        "value": { "$ref": "#/$defs/nullableNumber" },
+        "raw": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "item": {
+      "type": "object",
+      "required": ["line", "code", "description", "department"],
+      "properties": {
+        "line": { "type": "integer", "minimum": 1 },
+        "code": { "type": "string" },
+        "description": { "type": "string" },
+        "quantity": { "$ref": "#/$defs/nullableNumber" },
+        "quantityRaw": { "type": "string" },
+        "unitPrice": { "$ref": "#/$defs/nullableNumber" },
+        "unitPriceRaw": { "type": "string" },
+        "amount": { "$ref": "#/$defs/nullableNumber" },
+        "amountRaw": { "type": "string" },
+        "department": { "type": "string" },
+        "departmentSource": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "ticket": {
+      "type": "object",
+      "required": ["ticketNumber", "status", "items", "totals"],
+      "properties": {
+        "id": { "type": "string" },
+        "ticketNumber": { "type": "string", "minLength": 1 },
+        "series": { "type": "string" },
+        "branch": { "type": "string" },
+        "branchSource": { "enum": ["portal_preview", "batch_default", "manual_viewer", "missing"] },
+        "purchaseDate": { "type": "string" },
+        "purchaseDateSource": { "enum": ["portal_preview", "batch_default", "manual_viewer", "missing"] },
+        "purchaseDateRaw": { "type": "string" },
+        "purchaseTime": { "type": "string" },
+        "currency": { "type": "string", "default": "MXN" },
+        "status": { "type": "string" },
+        "detail": { "type": "string" },
+        "sourceRow": { "type": ["integer", "null"] },
+        "capturedAt": { "type": "string" },
+        "items": { "type": "array", "items": { "$ref": "#/$defs/item" } },
+        "totals": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/moneyValue" }
+        },
+        "warnings": { "type": "array", "items": { "type": "string" } },
+        "sourceFile": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

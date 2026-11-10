@@ -1,0 +1,1232 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#172638">
+<title>SORITICKET | Visor digital de tickets</title>
+<style>
+:root{--ink:#192838;--muted:#6b7887;--line:#e3e8ee;--surface:#fff;--canvas:#f4f6f9;--navy:#172638;--navy2:#253c52;--accent:#176c55;--accent-soft:#e9f5ef;--blue:#245b91;--blue-soft:#edf4fb;--danger:#a72d3a;--warning:#93621f;--shadow:0 12px 36px rgba(19,39,59,.08);--radius:16px}
+*{box-sizing:border-box}html{min-height:100%;background:var(--canvas)}body{margin:0;color:var(--ink);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--canvas)}button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.5}.app{max-width:1500px;margin:0 auto;padding:22px 26px 42px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 22px;background:linear-gradient(115deg,var(--navy),var(--navy2));border-radius:20px;color:#fff;box-shadow:var(--shadow)}.brand{display:flex;align-items:center;gap:14px;min-width:0}.brand-mark{width:44px;height:44px;border-radius:13px;background:#fff;color:var(--navy);display:grid;place-items:center;font-weight:900;font-size:15px;letter-spacing:-1px}.brand-title{font-size:19px;letter-spacing:.3px;font-weight:800}.brand-sub{font-size:11px;color:#c6d2de;margin-top:2px}.top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.btn{border:1px solid #d8e0e8;background:#fff;color:#203449;padding:9px 13px;border-radius:9px;font-weight:700;font-size:12px;display:inline-flex;gap:7px;align-items:center;justify-content:center;transition:.15s ease}.btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px #17263816}.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn-dark{background:#263d52;border-color:#3e5569;color:#fff}.btn-light{background:#f3f6f9;border-color:#e0e6ed}.btn-danger{color:var(--danger);background:#fff7f7;border-color:#f0d9dc}.btn-small{padding:7px 9px;font-size:11px}.hidden{display:none!important}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:18px 0}.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 4px 16px #152a3a06}.stat-label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.7px}.stat-value{font-size:26px;font-weight:800;letter-spacing:-.7px;margin-top:5px}.stat-note{font-size:11px;color:var(--muted);margin-top:1px}.workspace{display:grid;grid-template-columns:280px minmax(0,1fr);gap:17px;align-items:start}.filters{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:17px;box-shadow:0 5px 20px #152a3a06;position:sticky;top:16px}.section-title{font-size:13px;font-weight:800;margin:0 0 13px;letter-spacing:.2px}.field{display:block;margin-bottom:12px}.field span{display:block;font-size:11px;font-weight:750;color:#506070;margin-bottom:5px}.field input,.field select{width:100%;padding:9px 10px;border:1px solid #d8e0e8;border-radius:9px;background:#fff;color:var(--ink);outline:none}.field input:focus,.field select:focus{border-color:#6d9bc2;box-shadow:0 0 0 3px #397fb01c}.date-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.filter-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:4px}.filter-hint{font-size:10px;color:var(--muted);line-height:1.5;margin:14px 0 0;border-top:1px solid var(--line);padding-top:12px}.results{min-width:0}.results-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:2px 0 13px}.results-title{font-size:17px;font-weight:800;letter-spacing:-.3px}.results-count{font-size:11px;color:var(--muted);margin-top:3px}.results-tools{display:flex;align-items:center;gap:8px}.sort-select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:11px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.ticket-card{background:#fff;border:1px solid var(--line);border-radius:15px;box-shadow:0 4px 15px #182b3b08;overflow:hidden;transition:.16s ease}.ticket-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:15px 15px 11px}.ticket-code{font-size:13px;font-weight:850;overflow-wrap:anywhere}.ticket-date{font-size:11px;color:var(--muted);margin-top:4px}.status-pill{font-size:9px;text-transform:uppercase;letter-spacing:.55px;padding:5px 7px;border-radius:20px;font-weight:850;white-space:nowrap;background:#edf5f0;color:#23664e}.status-pill.incomplete{background:#fff4e4;color:#8b5d1d}.status-pill.other{background:#f1f3f5;color:#65717c}.card-meta{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 15px 12px}.meta-label{font-size:9px;color:#8793a0;text-transform:uppercase;font-weight:800;letter-spacing:.65px}.meta-value{font-size:12px;font-weight:700;margin-top:2px;overflow-wrap:anywhere}.card-items{padding:10px 15px;border-top:1px solid #edf0f3;border-bottom:1px solid #edf0f3;background:#fbfcfd}.item-preview{display:flex;justify-content:space-between;gap:12px;font-size:11px;padding:3px 0}.item-preview .desc{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#354657}.item-preview .amount{white-space:nowrap;font-weight:700}.more-items{font-size:10px;color:var(--muted);margin-top:4px}.dept-tags{display:flex;flex-wrap:wrap;gap:5px;padding:10px 15px 4px}.dept-tag{font-size:9px;font-weight:750;padding:4px 7px;border-radius:20px;background:#f0f3f6;color:#536474}.card-footer{display:flex;gap:7px;padding:11px 15px 14px}.card-footer .btn{flex:1}.empty{padding:50px 20px;text-align:center;border:1px dashed #cbd4de;border-radius:15px;background:#fff;color:var(--muted)}.empty strong{display:block;color:var(--ink);font-size:15px;margin-bottom:5px}.notice{margin:0 0 14px;padding:10px 13px;border-radius:10px;background:#edf4fb;border:1px solid #dbe8f5;color:#3f5e78;font-size:11px}.notice.warning{background:#fff6e9;border-color:#f0dfbe;color:#76531e}.notice.success{background:#ecf6f0;border-color:#d7eadf;color:#27614a}.modal-backdrop{position:fixed;inset:0;z-index:50;background:#0c1c2c99;display:none;align-items:center;justify-content:center;padding:22px}.modal-backdrop.open{display:flex}.modal{background:#f1f3f5;width:min(100%,1000px);max-height:calc(100vh - 44px);overflow:auto;border-radius:17px;box-shadow:0 25px 80px #08182766}.modal-head{position:sticky;top:0;z-index:3;background:#fff;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;padding:14px 18px}.modal-head strong{font-size:14px}.modal-content{padding:18px;display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,360px);gap:18px;align-items:start}.receipt-wrap{background:#fff;border:1px solid #dfe4e9;border-radius:12px;padding:16px;display:flex;justify-content:center;min-width:0}.receipt{background:#fff;width:302px;max-width:100%;color:#151515;font:11px/1.35 "Courier New",monospace;padding:7px 3px}.receipt-center{text-align:center}.soriana-receipt{width:302px;padding:8px 4px;font:10px/1.22 "Courier New",monospace}.receipt-logo{font:bold 27px Arial,sans-serif;letter-spacing:-1.5px}.receipt-branch{font-weight:800;font-size:11px}.receipt-company{text-align:center;font-size:9px}.soriana-receipt .receipt-meta{text-align:center;display:block;margin:7px 0}.soriana-columns,.soriana-item{display:grid;grid-template-columns:34px minmax(0,1fr) 49px 48px;gap:2px;font-size:9px}.soriana-columns{font-weight:800;border-bottom:1px solid #111;padding-bottom:4px}.soriana-item{margin:3px 0;align-items:start}.soriana-item span:first-child,.soriana-item span:nth-child(3),.soriana-item span:nth-child(4){text-align:right;white-space:nowrap}.soriana-item span:nth-child(2){overflow-wrap:anywhere}.soriana-totals{font-size:10px;text-align:right}.soriana-grand{font-weight:900;font-size:12px;border-top:1px solid #111;margin-top:5px;padding-top:5px}.soriana-center-note{text-align:center;font-weight:900;margin:12px 0 8px}.soriana-barcode{width:100%;height:55px}.soriana-barcode svg{width:100%;height:100%;display:block}.soriana-barcode-digits{text-align:center;letter-spacing:1px;font-size:10px}.soriana-foot{text-align:center;font-weight:800;font-size:9px;margin-top:8px}.receipt-logo{font:900 20px/1 Arial,sans-serif;letter-spacing:1px}.receipt-title{font-weight:700;margin:5px 0 2px}.receipt-muted{font-size:9px;color:#555}.receipt-line{border-top:1px dashed #777;margin:9px 0}.receipt-meta{display:grid;grid-template-columns:1fr;gap:3px;font-size:10px;overflow-wrap:anywhere}.receipt-table-head,.receipt-item-row{display:flex;justify-content:space-between;gap:8px}.receipt-table-head{font-weight:700;border-bottom:1px solid #777;padding:0 0 4px;margin-bottom:6px}.receipt-item{padding:4px 0;border-bottom:1px dashed #ccc}.receipt-item-name{font-weight:700;overflow-wrap:anywhere}.receipt-item-details{display:flex;justify-content:space-between;gap:8px;font-size:9px;color:#444;margin-top:2px}.receipt-totals{margin-top:7px}.receipt-total{display:flex;justify-content:space-between;gap:8px;padding:2px 0}.receipt-total.grand{font-size:13px;font-weight:900;border-top:1px solid #333;margin-top:5px;padding-top:6px}.receipt-foot{font-size:9px;text-align:center;margin-top:11px;line-height:1.45}.editor{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px}.editor h3{font-size:12px;margin:0 0 11px}.editor .field{margin-bottom:9px}.editor .field input{padding:8px;font-size:11px}.line-editor{border-top:1px solid var(--line);padding-top:11px;margin-top:13px}.line-editor-row{padding:9px 0;border-bottom:1px solid #eef1f4}.line-editor-row strong{display:block;font-size:10px;line-height:1.4}.line-editor-row small{font-size:9px;color:var(--muted)}.line-editor-row select{margin-top:6px;width:100%;padding:7px;border:1px solid #d9e0e8;border-radius:7px;font-size:10px;background:#fff}.modal-actions{display:flex;flex-wrap:wrap;gap:7px;padding:0 18px 18px}.modal-actions .btn{min-width:120px}.footer-note{text-align:center;color:#8a96a2;font-size:10px;padding:23px 5px 0}.file-input{display:none!important}.load-label{display:inline-flex;align-items:center;gap:7px}.import-count{font-variant-numeric:tabular-nums}.mini-alert{font-size:10px;color:var(--warning);margin-top:7px;line-height:1.45}
+@media(max-width:1050px){.workspace{grid-template-columns:245px minmax(0,1fr)}.grid{grid-template-columns:1fr}.modal-content{grid-template-columns:minmax(260px,1fr) minmax(250px,310px)}}
+@media(max-width:760px){.app{padding:12px 11px 30px}.topbar{align-items:flex-start;flex-direction:column;padding:15px}.top-actions{justify-content:flex-start;width:100%}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat{padding:12px}.stat-value{font-size:22px}.workspace{grid-template-columns:1fr}.filters{position:static}.results-head{align-items:flex-start;flex-direction:column}.results-tools{width:100%;justify-content:space-between}.grid{grid-template-columns:1fr}.modal-backdrop{padding:0;align-items:flex-end}.modal{width:100%;max-height:94vh;border-radius:17px 17px 0 0}.modal-content{grid-template-columns:1fr;padding:12px}.receipt-wrap{padding:10px}.editor{padding:12px}.modal-actions{padding:0 12px 15px}.modal-actions .btn{flex:1}}
+@media print{body{background:#fff}.app,.modal-head,.editor,.modal-actions{display:none!important}.modal-backdrop{display:block!important;position:static;background:#fff;padding:0}.modal{max-height:none;overflow:visible;box-shadow:none;border:0;width:100%;border-radius:0}.modal-content{display:block;padding:0}.receipt-wrap{border:0;padding:0}.receipt{width:80mm;max-width:none;margin:0 auto;padding:0}.footer-note{display:none}}
+
+/* SORITICKET 1.3.13 - PDF renderizado desde la misma plantilla del visor */
+.receipt-wrap{align-items:flex-start;overflow:auto;padding:12px;background:#edf0f2}
+.soriana-receipt{width:80mm;max-width:100%;min-width:0;padding:7px 5px 10px;background:#fff;color:#000;font:10px/1.18 "Courier New",monospace;box-shadow:0 1px 8px #00000012;overflow-wrap:anywhere}
+.soriana-header{text-align:center;line-height:1.16}
+.soriana-logo-wrap{width:190px;max-width:84%;height:42px;margin:0 auto 2px}
+.soriana-logo{width:100%;height:100%;display:block;fill:#000}
+.soriana-branch{font-size:11px;font-weight:900;line-height:1.15;margin:1px 0 3px}
+.soriana-company,.soriana-address{font-size:9px;line-height:1.18;text-align:center;overflow-wrap:anywhere}
+.soriana-meta{text-align:center;font-size:10px;line-height:1.25;margin:8px 0 7px;overflow-wrap:anywhere}
+.soriana-items{border-top:1px dashed #111;border-bottom:1px dashed #111;padding:5px 0;margin:4px 0}
+.soriana-sales-table{display:block;width:100%;font:8px/1.2 "Courier New",monospace;color:#000}
+.soriana-sales-header,.soriana-sales-row{display:grid;grid-template-columns:11% minmax(0,1fr) 20% 22%;column-gap:7px;width:100%;align-items:start}
+.soriana-sales-header{font-size:6px;font-weight:900;line-height:1.15;white-space:nowrap;border-bottom:1px solid #111;padding:0 2px 4px}
+.soriana-sales-header span:first-child,.soriana-sales-row .qty{text-align:right}
+.soriana-sales-header span:nth-child(3),.soriana-sales-header span:nth-child(4),.soriana-sales-row .unit,.soriana-sales-row .sum{text-align:right;white-space:nowrap}
+.soriana-sales-row{padding:4px 2px 5px;font-size:8px}
+.soriana-sales-row+.soriana-sales-row{border-top:1px dotted #ddd}
+.soriana-sales-row .desc{text-align:left;white-space:normal;overflow-wrap:anywhere;word-break:normal;min-width:0;padding-right:2px}
+.soriana-no-items{text-align:center;font-size:9px;padding:7px 0}
+.soriana-totals{font-size:9px;margin-top:4px}
+.soriana-total-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start;padding:2px 0}
+.soriana-total-row span:last-child{white-space:nowrap;text-align:right}
+.soriana-grand{font-size:11px;font-weight:900;border-top:1px solid #111;padding-top:5px;margin-top:4px}
+.soriana-articles{text-align:right;margin-top:2px}
+.soriana-savings{text-align:center;font-weight:900;line-height:1.25;margin:16px 2px 12px;font-size:10px}
+.soriana-points{font-size:9px;margin:10px 0 9px}
+.soriana-service{text-align:center;font-size:8px;line-height:1.22;margin-top:9px;overflow-wrap:anywhere}
+.soriana-service div{margin:3px 0}
+.soriana-cashier{text-align:center;font-size:9px;margin:9px 0}
+.soriana-mobile{text-align:center;font-size:8px;line-height:1.22;margin:12px 3px 10px}
+.soriana-brand-footer{text-align:center;font-size:9px;font-weight:900;margin-top:14px}
+.soriana-version{text-align:center;font-size:8px;margin-top:3px}
+.soriana-barcode{width:92%;height:62px;margin:8px auto 3px;overflow:hidden}
+.soriana-barcode svg{width:100%;height:100%;display:block;fill:#000}
+.soriana-barcode-digits{text-align:center;font-size:9px;letter-spacing:.7px;overflow-wrap:anywhere}
+@media(max-width:700px){.modal-content{grid-template-columns:minmax(0,1fr)}.receipt-wrap{padding:8px}.soriana-receipt{width:80mm;max-width:100%}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">ST</div><div><div class="brand-title">SORITICKET <span style="font-weight:500;color:#c6d2de">/ VISOR DIGITAL</span></div><div class="brand-sub">Archivo local de tickets · Consulta · Clasificación · PDF · ZIP · v1.3.13</div></div></div>
+    <div class="top-actions">
+      <label class="btn btn-dark load-label" for="jsonFiles">＋ Cargar JSON</label><input class="file-input" id="jsonFiles" type="file" accept=".json,application/json" multiple>
+      <button class="btn btn-dark" id="exportJsonAll">Exportar JSON</button>
+      <button class="btn btn-primary" id="exportZipAll">Exportar ZIP filtrado</button>
+    </div>
+  </header>
+  <section class="stats">
+    <div class="stat"><div class="stat-label">Tickets almacenados</div><div class="stat-value" id="statTotal">0</div><div class="stat-note">Total de registros únicos</div></div>
+    <div class="stat"><div class="stat-label">Total de compra filtrado</div><div class="stat-value" id="statAmount">$0.00</div><div class="stat-note">Suma de tickets en el resultado</div></div>
+    <div class="stat"><div class="stat-label">Productos filtrados</div><div class="stat-value" id="statProducts">0</div><div class="stat-note">Líneas de producto encontradas</div></div>
+    <div class="stat"><div class="stat-label">Sucursales identificadas</div><div class="stat-value" id="statBranches">0</div><div class="stat-note">En el conjunto filtrado</div></div>
+  </section>
+  <div id="globalNotice" class="notice">Carga uno o varios archivos JSON exportados por SORITICKET Captura. La clasificación por departamento es automática por descripción y puedes corregirla desde el visor.</div>
+  <div class="workspace">
+    <aside class="filters">
+      <h2 class="section-title">Buscar y filtrar tickets</h2>
+      <label class="field"><span>Texto de búsqueda</span><input id="searchText" type="search" placeholder="Ticket, producto, código, sucursal..."></label>
+      <label class="field"><span>Sucursal</span><select id="branchFilter"><option value="">Todas las sucursales</option></select></label>
+      <div class="date-grid">
+        <label class="field"><span>Desde</span><input id="dateFrom" type="date"></label>
+        <label class="field"><span>Hasta</span><input id="dateTo" type="date"></label>
+      </div>
+      <label class="field"><span>Departamento</span><select id="departmentFilter"><option value="">Todos los departamentos</option></select></label>
+      <label class="field"><span>Estado de captura</span><select id="statusFilter"><option value="">Todos</option><option value="captured">Capturado</option><option value="captured_incomplete">Incompleto</option><option value="other">Sin captura completa</option></select></label>
+      <div class="filter-actions"><button class="btn btn-light" id="resetFilters">Limpiar filtros</button><button class="btn btn-primary" id="exportZipFiltered">ZIP de PDF</button></div>
+      <div class="filter-hint">El filtro por departamento incluye el ticket completo cuando al menos uno de sus productos pertenece a ese departamento. El PDF y el ZIP conservan todas las líneas originales del ticket.</div>
+    </aside>
+    <main class="results">
+      <div class="results-head"><div><div class="results-title">Tickets de compra</div><div class="results-count" id="resultsCount">0 tickets encontrados</div></div><div class="results-tools"><select class="sort-select" id="sortOrder"><option value="newest">Fecha: más recientes</option><option value="oldest">Fecha: más antiguos</option><option value="amount-desc">Total: mayor a menor</option><option value="amount-asc">Total: menor a mayor</option><option value="branch">Sucursal: A–Z</option></select></div></div>
+      <div class="grid" id="ticketGrid"></div>
+      <div class="empty" id="emptyState"><strong>Tu archivo de tickets aparecerá aquí</strong>Importa un JSON desde el botón “Cargar JSON”. El visor trabaja localmente con los archivos que selecciones.</div>
+    </main>
+  </div>
+  <div class="footer-note">SORITICKET · Visor local HTML5 / JavaScript / CSS3. No conecta a Soriana ni emite facturas. Los PDF son representaciones digitales de la información importada, no CFDI ni comprobantes fiscales emitidos por Soriana.</div>
+</div>
+
+<div class="modal-backdrop" id="ticketModal" aria-hidden="true">
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head"><strong id="modalTitle">Ticket digital</strong><button class="btn btn-small btn-light" id="closeModal" type="button">Cerrar ✕</button></div>
+    <div class="modal-content">
+      <div class="receipt-wrap"><div class="receipt" id="receiptView"></div></div>
+      <aside class="editor">
+        <h3>Datos de identificación del ticket</h3>
+        <label class="field"><span>Sucursal / tienda</span><input id="editBranch" type="text" placeholder="Sucursal no disponible"></label>
+        <label class="field"><span>Fecha de compra</span><input id="editPurchaseDate" type="date"></label>
+        <label class="field"><span>Hora de compra (opcional)</span><input id="editPurchaseTime" type="text" placeholder="HH:MM"></label>
+        <div class="mini-alert" id="metadataSource"></div>
+        <div class="line-editor"><h3>Clasificación de productos</h3><div id="lineEditor"></div></div>
+      </aside>
+    </div>
+    <div class="modal-actions"><button class="btn btn-primary" id="modalPdf">Descargar PDF</button><button class="btn btn-light" id="modalPrint">Imprimir ticket</button><button class="btn btn-light" id="modalJson">Exportar este ticket JSON</button></div>
+  </section>
+</div>
+
+<script>
+(() => {
+'use strict';
+const APP_VERSION='1.3.13';
+const STORAGE_KEY='soriticket.viewer.archive.v1';
+const DEPARTMENTS=[
+{id:'frutas-verduras',name:'Frutas y verduras',words:['fruta','verdura','manzana','platano','banana','naranja','limon','aguacate','jitomate','tomate','cebolla','papa','zanahoria','lechuga','pepino','cilantro','chile serrano','brocoli','calabaza','uva','fresa','melon','sandia','papaya','mango','pera','pina','apio','espinaca']},
+{id:'carnes-pescados',name:'Carnes y pescados',words:['res','bistec','molida','pollo','pechuga','pierna','muslo','pescado','atun fresco','camaron','cerdo','costilla','arrachera','carne','filete','chuleta']},
+{id:'carnes-frias',name:'Carnes frías y embutidos',words:['jamon','salchicha','tocino','mortadela','peperoni','chorizo','longaniza','pavo rebanado','salami']},
+{id:'lacteos',name:'Lácteos y refrigerados',words:['leche','queso','yogur','yoghurt','crema','mantequilla','margarina','flan','crema acida','requeson','media crema']},
+{id:'panaderia',name:'Panadería y tortillería',words:['pan','bolillo','tortilla','telera','pastel','dona','donut','pastelillo','birote','baguette']},
+{id:'abarrotes',name:'Abarrotes',words:['arroz','frijol','azucar','sal','aceite','harina','pasta','sopa','atun lata','sardina','mayonesa','catsup','pure de tomate','cereal','avena','cafe','te ','chocolate polvo','consome','caldo','chile seco','especias','vinagre','aderezo','mermelada','miel','lenteja','garbanzo','galleta','enlatado','conserva']},
+{id:'bebidas',name:'Bebidas',words:['agua','refresco','jugo','nectar','bebida','suero','energetica','isotonica','cafe listo','te helado','mineral']},
+{id:'botanas-dulces',name:'Botanas y dulces',words:['papas fritas','botana','fritura','cacahuate','nuez','semilla','palomitas','chicle','caramelo','chocolate','dulce','gomita','mazapan','barra']},
+{id:'congelados',name:'Congelados',words:['congelado','helado','nieve','pizza congelada','vegetales congelados','verdura congelada','nugget','croqueta']},
+{id:'limpieza-hogar',name:'Limpieza del hogar',words:['detergente','suavizante','cloro','limpiador','desinfectante','lavatrastes','jabon ropa','multiusos','escoba','trapeador','bolsa basura','aromatizante','esponja','fibra','servilleta','toalla cocina','papel aluminio','film']},
+{id:'higiene-personal',name:'Higiene personal',words:['shampoo','acondicionador','jabon corporal','jabon tocador','pasta dental','cepillo dental','desodorante','rastrillo','afeitar','papel higienico','toalla sanitaria','panal adulto','algodon','hisopo','enjuague bucal','protector diario']},
+{id:'belleza',name:'Belleza y cosméticos',words:['maquillaje','labial','rimel','mascara pestanas','delineador','base maquillaje','polvo compacto','rubor','esmalte','acetona','perfume','locion','crema facial','tinte cabello']},
+{id:'bebes',name:'Bebés',words:['formula infantil','leche maternizada','papilla','alimento bebe','toallitas humedas','pañal','pañales','panal','panales','panal bebe','biberon']},
+{id:'mascotas',name:'Mascotas',words:['croquetas','alimento perro','alimento gato','arena gato','mascota','sobre perro','sobre gato']},
+{id:'farmacia',name:'Farmacia y cuidado',words:['curita','venda','termometro','analgesico','vitamina','suplemento','antiseptico','alcohol gel','cubrebocas','medicamento']},
+{id:'hogar-cocina',name:'Hogar y cocina',words:['vaso','plato','cubierto','sarten','olla','recipiente','contenedor','foco','pila','bateria','utensilio','taza','termo','mantel','organizador']},
+{id:'electronica',name:'Electrónica y accesorios',words:['cable usb','audifono','cargador','bocina','memoria usb','electronico','adaptador','control remoto']},
+{id:'ropa',name:'Ropa y textiles',words:['playera','camiseta','calcetin','ropa','toalla bano','sabana','cobija','almohada']},
+{id:'otros',name:'Otros productos',words:[]}
+];
+const $=id=>document.getElementById(id);
+const normalize=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+const departmentName=id=>DEPARTMENTS.find(d=>d.id===id)?.name||'Otros productos';
+function classify(description,code=''){const src=` ${normalize(description)} ${normalize(code)} `;for(const d of DEPARTMENTS){if(d.id!=='otros'&&d.words.some(w=>{const term=normalize(w);return src.includes(` ${term} `)||term.length>3&&src.includes(term);} ))return d.id;}return 'otros';}
+function toIsoDate(v){const s=String(v??'').trim();if(!s)return '';let m=s.match(/\b(\d{4})[-/](\d{1,2})[-/](\d{1,2})\b/);if(m)return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;m=s.match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/);if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;return s;}
+function num(v){if(typeof v==='number')return Number.isFinite(v)?v:null;const s=String(v??'').replace(/\s/g,'').replace(/\$/g,'').replace(/,/g,'');if(!s||/^(null|undefined|nan|-)$/i.test(s))return null;const n=Number(s.replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:null;}
+function rawValue(v){const s=String(v??'').trim();return !s||/^(null|undefined|nan|-)$/i.test(s)||/^\$null$/i.test(s)?'':s;}
+function money(v,raw=''){const r=rawValue(raw);if(r)return r;const n=num(v);return n===null?'No disponible':n.toLocaleString('es-MX',{style:'currency',currency:'MXN'});}
+function amount(t){const x=t?.totals?.total;if(x&&typeof x==='object')return num(x.value??x.raw);return num(x);}
+function makeId(t){return [t.ticketNumber,t.series,t.branch,t.purchaseDate].map(v=>String(v||'').trim()).join('|');}
+function stripProductFieldLabel(value,field){
+ const text=rawValue(value);if(!text)return '';
+ const labels={
+  code:/^(?:c[oó]digo|sku|clave)\s*(?::|：|\-)?\s*/i,
+  quantity:/^(?:cantidad|cant\.?|pzas?\.?|unidades)\s*(?::|：|\-)?\s*/i,
+  description:/^(?:descripci[oó]n|art[ií]culo|producto|nombre)\s*(?::|：|\-)?\s*/i,
+  unitPrice:/^(?:precio(?:\s+unitario)?|p\.?\s*u\.?)\s*(?::|：|\-)?\s*/i,
+  amount:/^(?:importe|total)\s*(?::|：|\-)?\s*/i
+ };
+ return text.replace(labels[field]||/$^/,'').trim();
+}
+function parseLabeledProductLine(value){
+ const text=String(value??'').replace(/[\t\r\n]+/g,' ').replace(/\s{2,}/g,' ').trim();
+ const m=text.match(/^cantidad\s*(?::|：|\-)?\s*(\d+(?:[.,]\d+)?)\s+descripci[oó]n\s*(?::|：|\-)?\s*(.*?)\s+precio(?:\s+unitario)?\s*(?::|：|\-)?\s*\$?(-?\d[\d,]*(?:\.\d{1,4})?)\s+importe\s*(?::|：|\-)?\s*\$?(-?\d[\d,]*(?:\.\d{1,4})?)$/i);
+ return m?{quantityRaw:m[1],description:m[2].trim(),unitPriceRaw:m[3],amountRaw:m[4]}:null;
+}
+function normalizeItem(input,index){
+ const it=typeof input==='string'?{description:input}:(input||{});
+ const sourceDescription=rawValue(it.description??it.descripcion??it.name??it.producto??it.text??it.rawText);
+ const parsedLine=parseLabeledProductLine(sourceDescription)||parseLabeledProductLine(it.text??it.rawText??'');
+ const code=stripProductFieldLabel(it.code??it.codigo??it.sku??it.productCode,'code');
+ const description=(parsedLine?.description||stripProductFieldLabel(sourceDescription,'description'))||'Descripción no disponible';
+ const quantitySource=it.quantityRaw??it.quantity??it.cantidad;
+ const unitPriceSource=it.unitPriceRaw??it.unitPrice??it.priceRaw??it.price??it.precio;
+ const amountSource=it.amountRaw??it.importe??it.amount??it.total;
+ const quantityRaw=stripProductFieldLabel(parsedLine?.quantityRaw??quantitySource,'quantity');
+ const unitPriceRaw=stripProductFieldLabel(parsedLine?.unitPriceRaw??unitPriceSource,'unitPrice');
+ const amountRaw=stripProductFieldLabel(parsedLine?.amountRaw??amountSource,'amount');
+ const quantity=parsedLine?num(quantityRaw):(typeof quantitySource==='number'?quantitySource:num(quantityRaw));
+ const unitPrice=parsedLine?num(unitPriceRaw):(typeof unitPriceSource==='number'?unitPriceSource:num(unitPriceRaw));
+ const amount=parsedLine?num(amountRaw):(typeof amountSource==='number'?amountSource:num(amountRaw));
+ const dept=it.department&&DEPARTMENTS.some(d=>d.id===it.department)?it.department:classify(description,code);
+ return {line:Number(it.line)||index+1,code,description,quantity,quantityRaw,unitPrice,unitPriceRaw,amount,amountRaw,department:dept,departmentSource:it.departmentSource||'automatic_keyword_match'};
+}
+function decodeTicketIdentity(ticketNumber){const code=String(ticketNumber||'').replace(/\D/g,'');if(code.length<8)return {branchCode:'',encodedPurchaseDate:'',valid:false};const branchCode=code.slice(0,4),month=Number(code.slice(4,6)),day=Number(code.slice(6,8)),year=new Date().getFullYear();const date=new Date(year,month-1,day);const valid=month>=1&&month<=12&&day>=1&&date.getFullYear()===year&&date.getMonth()===month-1&&date.getDate()===day;return {branchCode,encodedPurchaseDate:valid?`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`:'',valid};}
+// Catálogo parcial: 67 entradas; 48 filas históricas del directorio Soriana 2020 y 19 sucursales adicionales solicitadas y cotejadas con fuentes fechadas.
+const BRANCH_CATALOG={
+ "0007": {
+  "code": "0007",
+  "directoryCode": 7,
+  "name": "CONTRY",
+  "format": "HÍPER",
+  "addressLines": [
+   "Av. Eugenio Garza Sada 745, Col. Contry",
+   "Monterrey, Nuevo León, C.P. 64860"
+  ],
+  "state": "NUEVO LEÓN",
+  "source": "Directorio Tiendas Soriana Sep 2020, DET 7; dirección verificada en directorio oficial, p. 1",
+  "postalCode": "64860"
+ },
+ "0014": {
+  "code": "0014",
+  "directoryCode": 14,
+  "name": "SAN PEDRO",
+  "format": "HÍPER",
+  "addressLines": [
+   "Av. Humberto Lobo y Río Guadalquivir 520, Col. Del Valle",
+   "San Pedro Garza García, Nuevo León, C.P. 66220"
+  ],
+  "state": "NUEVO LEÓN",
+  "source": "Directorio Tiendas Soriana Sep 2020, DET 14",
+  "postalCode": "66220"
+ },
+ "0061": {
+  "code": "0061",
+  "directoryCode": 61,
+  "name": "CORDILLERAS",
+  "format": "HÍPER",
+  "addressLines": [
+   "Av. Manuel J. Clouthier 888, Col. Jardines Tepeyac",
+   "Zapopan, Jalisco, C.P. 45047"
+  ],
+  "state": "JALISCO",
+  "source": "Directorio Tiendas Soriana Sep 2020, DET 61",
+  "postalCode": "45047"
+ },
+ "0118": {
+  "code": "0118",
+  "name": "SAN JUAN DEL RIO",
+  "format": "HÍPER",
+  "addressLines": [
+   "Av. Río Moctezuma 268, Col. San Cayetano",
+   "San Juan del Río, Querétaro, C.P. 76807"
+  ],
+  "state": "QUERÉTARO",
+  "source": "Registro Soriana de establecimientos, ID 0118; Gobierno del Estado de Querétaro, directorio 2025",
+  "postalCode": "76807",
+  "note": "La dirección está respaldada por el directorio del Gobierno de Querétaro 2025; la asociación de la clave 0118 con esta sucursal fue proporcionada por el usuario."
+ },
+ "0223": {
+  "code": "0223",
+  "directoryCode": 223,
+  "name": "SENDERO SALTILLO",
+  "format": "HÍPER",
+  "addressLines": [
+   "Carretera a Los González 365, Col. Ex Hacienda San José de los Cerritos",
+   "Saltillo, Coahuila, C.P. 25203"
+  ],
+  "state": "COAHUILA",
+  "source": "Directorio Tiendas Soriana Sep 2020, DET 223",
+  "postalCode": "25203"
+ },
+ "0241": {
+  "code": "0241",
+  "directoryCode": 241,
+  "name": "SENDERO APODACA",
+  "format": "HÍPER",
+  "addressLines": [
+   "Av. La Concordia 800, Col. Los Ébanos, 9.º Sector",
+   "Apodaca, Nuevo León, C.P. 66612"
+  ],
+  "state": "NUEVO LEÓN",
+  "source": "Directorio Tiendas Soriana Sep 2020, DET 241",
+  "postalCode": "66612"
+ },
+ "0245": {
+  "code": "0245",
+  "directoryCode": 245,
+  "name": "SENDERO MERIDA",
+  "format": "HÍPER",
+  "addressLines": [
+   "Calle 14 No. 70, Plaza Sendero Mérida, Col. Chuminópolis",
+   "Mérida, Yucatán, C.P. 97158"
+  ],
+  "state": "YUCATÁN",
+  "source": "Directorio Tiendas Soriana Sep 2020, DET 245",
+  "postalCode": "97158"
+ },
+ "0252": {
+  "code": "0252",
+  "directoryCode": 252,
+  "name": "MIYANA",
+  "format": "HÍPER",
+  "addressLines": [
+   "Av. Ejército Nacional 769, Local 1, Col. Granada",
+   "Alcaldía Miguel Hidalgo, Ciudad de México, C.P. 11520"
+  ],
+  "state": "CIUDAD DE MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, DET 252; dirección y CP cotejados con buscador oficial Soriana",
+  "postalCode": "11520"
+ },
+ "0267": {
+  "code": "0267",
+  "directoryCode": 267,
+  "name": "CONSTITUYENTES",
+  "format": "HÍPER",
+  "addressLines": [
+   "Av. Ejército Republicano 148, Col. Carretas",
+   "Santiago de Querétaro, Querétaro, C.P. 76050"
+  ],
+  "state": "QUERÉTARO",
+  "source": "Directorio Tiendas Soriana Sep 2020, DET 267; Gobierno del Estado de Querétaro, directorio 2025",
+  "postalCode": "76050"
+ },
+ "0272": {
+  "code": "0272",
+  "directoryCode": 272,
+  "name": "GRAN TERRAZA COAPA",
+  "format": "HÍPER",
+  "addressLines": [
+   "Calzada Acoxpa 1666, Col. Ejidos de Villa Coapa",
+   "Alcaldía Tlalpan, Ciudad de México, C.P. 14390"
+  ],
+  "state": "CIUDAD DE MÉXICO",
+  "source": "Buscador oficial de tiendas Soriana, consultado 2026-11-09; el Directorio Sep 2020 (DET 272) consignaba Calzada Acoxpa 610",
+  "postalCode": "14390",
+  "note": "Se usa el domicilio más reciente publicado por Soriana (1666), no el número 610 del directorio de septiembre de 2020."
+ },
+ "0312": {
+  "code": "0312",
+  "directoryCode": 312,
+  "name": "PLAZA DEL SOL",
+  "format": "HÍPER",
+  "addressLines": [
+   "Centro Comercial Plaza del Sol, Edificio A, Local 1",
+   "Col. Ciudad del Sol, Zapopan, Jalisco, C.P. 45050"
+  ],
+  "state": "JALISCO",
+  "source": "Directorio Tiendas Soriana Sep 2020, DET 312",
+  "postalCode": "45050",
+  "note": "El directorio identifica el centro comercial, edificio y local; no publica calle ni número exterior adicionales."
+ },
+ "0599": {
+  "code": "0599",
+  "name": "TEZAL",
+  "format": "HÍPER",
+  "addressLines": [
+   "Carretera Transpeninsular Lic. Benito Juárez García 1360, Col. El Tezal",
+   "Los Cabos, Baja California Sur, C.P. 23454"
+  ],
+  "state": "BAJA CALIFORNIA SUR",
+  "source": "Directorio de establecimientos Ualá Soriana diciembre 2025 y Directorio de Corresponsales Banorte al 2026-04-30; la clave 0599 fue proporcionada por el usuario",
+  "postalCode": "23454",
+  "note": "La dirección está respaldada por listados 2025/2026; la asociación de clave 0599 con TEZAL es la clave proporcionada por el usuario."
+ },
+ "0659": {
+  "code": "0659",
+  "directoryCode": 659,
+  "name": "SENDERO LA FE",
+  "format": "HÍPER",
+  "addressLines": [
+   "Av. Miguel Alemán 789, esq. Av. Teléfono, Col. Zona Industrial",
+   "Apodaca, Nuevo León, C.P. 66600"
+  ],
+  "state": "NUEVO LEÓN",
+  "source": "Directorio Tiendas Soriana Sep 2020, DET 659",
+  "postalCode": "66600"
+ },
+ "0683": {
+  "code": "0683",
+  "directoryCode": 683,
+  "name": "VIA VALLEJO",
+  "format": "HÍPER",
+  "addressLines": [
+   "Calz. Vallejo 1090, Col. Santa Cruz de las Salinas",
+   "Alcaldía Azcapotzalco, Ciudad de México, C.P. 02340"
+  ],
+  "state": "CIUDAD DE MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, DET 683",
+  "postalCode": "02340"
+ },
+ "0692": {
+  "code": "0692",
+  "directoryCode": 692,
+  "name": "MEGA PILARES",
+  "format": "MEGA SORIANA",
+  "addressLines": [
+   "Pilares 541, Col. Del Valle",
+   "Alcaldía Benito Juárez, Ciudad de México, C.P. 03100"
+  ],
+  "state": "CIUDAD DE MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, DET 692 (PILARES); directorio Ualá de establecimientos Soriana diciembre 2025; buscador oficial Soriana",
+  "postalCode": "03100"
+ },
+ "0862": {
+  "code": "0862",
+  "name": "MEGA SAN JERÓNIMO",
+  "format": "MEGA SORIANA",
+  "addressLines": [
+   "Av. San Jerónimo 630",
+   "Alcaldía Álvaro Obregón, Ciudad de México, C.P. 01990"
+  ],
+  "state": "CIUDAD DE MÉXICO",
+  "source": "Directorio Ualá de establecimientos Soriana diciembre 2025 (MEGA FARMACIA SAN JERÓNIMO); buscador oficial de tiendas Soriana",
+  "postalCode": "01990",
+  "note": "El buscador oficial de Soriana publica Av. San Jerónimo 630, Pedregal de San Ángel, C.P. 01990; el listado Ualá de diciembre de 2025 indica San Jerónimo Lídice y C.P. 01900. Se usa la dirección del buscador oficial y se omite la colonia para no resolver la discrepancia por inferencia."
+ },
+ "0879": {
+  "code": "0879",
+  "name": "QUERÉTARO II",
+  "format": "HÍPER",
+  "addressLines": [
+   "Av. Fundición 25, Col. Parques Industriales",
+   "Querétaro, Querétaro, C.P. 76160"
+  ],
+  "state": "QUERÉTARO",
+  "source": "Gobierno del Estado de Querétaro, directorio 2025; nombre y clave 0879 proporcionados por el usuario",
+  "postalCode": "76160",
+  "note": "El directorio gubernamental 2025 identifica Querétaro II en Av. Fundición 25, Col. Parques Industriales. La clave 0879 fue proporcionada por el usuario. El Directorio oficial Soriana de septiembre de 2020 registraba DET 879 como PLAZA DEL PARQUE en Epigmenio González 25; las fuentes no permiten confirmar que ambos registros sean la misma tienda."
+ },
+ "0937": {
+  "code": "0937",
+  "directoryCode": 937,
+  "name": "MEGA COAPA",
+  "format": "MEGA SORIANA",
+  "addressLines": [
+   "Calle del Puente 186, Col. AMSA",
+   "Alcaldía Tlalpan, Ciudad de México, C.P. 14380"
+  ],
+  "state": "CIUDAD DE MÉXICO",
+  "source": "Directorio de establecimientos Soriana/Compartamos enero 2025 y directorio de corresponsales Banorte 2026",
+  "postalCode": "14380"
+ },
+ "0960": {
+  "code": "0960",
+  "directoryCode": 960,
+  "name": "MEGA GRAN SUR",
+  "format": "MEGA SORIANA",
+  "addressLines": [
+   "Av. del Imán 151, Col. Pedregal de Carrasco",
+   "Alcaldía Coyoacán, Ciudad de México, C.P. 04700"
+  ],
+  "state": "CIUDAD DE MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, DET 960; directorio Ualá de establecimientos Soriana diciembre 2025; buscador oficial Soriana",
+  "postalCode": "04700"
+ },
+ "0983": {
+  "code": "0983",
+  "directoryCode": 983,
+  "name": "CHICONAUTLA",
+  "format": "MERCADO",
+  "addressLines": [
+   "Av. Nacional S/N, esq. Circuito Cuauhtémoc y Herrería",
+   "Col. Santo Tomás Chiconautla, C.P. 55069",
+   "México"
+  ],
+  "state": "MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 983",
+  "postalCode": "55069"
+ },
+ "0984": {
+  "code": "0984",
+  "directoryCode": 984,
+  "name": "IRAPUATO ABASTOS",
+  "format": "MERCADO",
+  "addressLines": [
+   "Prolongación J. García #1505",
+   "Col. El Refugio de García"
+  ],
+  "state": "GUANAJUATO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 984"
+ },
+ "0985": {
+  "code": "0985",
+  "directoryCode": 985,
+  "name": "CUAUTLA LOS ARCOS",
+  "format": "MEGA SORIANA",
+  "addressLines": [
+   "Antigua Carretera México-Cuautla 4",
+   "Col. Postal, C.P. 62748, Cuautla, Morelos"
+  ],
+  "state": "MORELOS",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 985",
+  "postalCode": "62748"
+ },
+ "0986": {
+  "code": "0986",
+  "directoryCode": 986,
+  "name": "SAN LORENZO XALPA",
+  "format": "MERCADO",
+  "addressLines": [
+   "Av. San Lorenzo No. 2171",
+   "Col. San Juan Xalpa, Iztapalapa, C.P. 09850"
+  ],
+  "state": "CIUDAD DE MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 986",
+  "postalCode": "09850"
+ },
+ "0987": {
+  "code": "0987",
+  "directoryCode": 987,
+  "name": "REFUGIO",
+  "format": "HÍPER",
+  "addressLines": [
+   "Blvd. El Refugio 22245",
+   "Col. El Florido 4, C.P. 22245, Tijuana, Baja California"
+  ],
+  "state": "BAJA CALIFORNIA",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 987",
+  "postalCode": "22245"
+ },
+ "0988": {
+  "code": "0988",
+  "directoryCode": 988,
+  "name": "TEOLOYUCÁN",
+  "format": "MERCADO",
+  "addressLines": [
+   "Av. del Lago No. 2",
+   "Bo. Tepanquiáhuac, Teoloyucan"
+  ],
+  "state": "MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 988"
+ },
+ "0989": {
+  "code": "0989",
+  "directoryCode": 989,
+  "name": "NUEVO VALLARTA",
+  "format": "MEGA SORIANA",
+  "addressLines": [
+   "Carretera Tepic-Puerto Vallarta km 144, No. 1297 Sur",
+   "Col. Flamingos Club Residencial, C.P. 63732"
+  ],
+  "state": "NAYARIT",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 989",
+  "postalCode": "63732"
+ },
+ "0992": {
+  "code": "0992",
+  "directoryCode": 992,
+  "name": "CALAFIA",
+  "format": "HÍPER",
+  "addressLines": [
+   "Calz. Lic. Adolfo López Mateos 1100",
+   "Col. Zona Industrial, C.P. 21010, Mexicali, Baja California"
+  ],
+  "state": "BAJA CALIFORNIA",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 992",
+  "postalCode": "21010"
+ },
+ "0993": {
+  "code": "0993",
+  "directoryCode": 993,
+  "name": "ANÁHUAC",
+  "format": "HÍPER",
+  "addressLines": [
+   "Calz. Anáhuac 1301",
+   "Col. Residencial Casa Magna, C.P. 21380, Mexicali, Baja California"
+  ],
+  "state": "BAJA CALIFORNIA",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 993",
+  "postalCode": "21380"
+ },
+ "0994": {
+  "code": "0994",
+  "directoryCode": 994,
+  "name": "TRANSPENINSULAR",
+  "format": "HÍPER",
+  "addressLines": [
+   "Carretera Transpeninsular 100",
+   "Col. Carlos Pacheco, C.P. 22890, Ensenada, Baja California"
+  ],
+  "state": "BAJA CALIFORNIA",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 994",
+  "postalCode": "22890"
+ },
+ "0996": {
+  "code": "0996",
+  "directoryCode": 996,
+  "name": "CITADINA EL PUEBLITO",
+  "format": "MEGA SORIANA",
+  "addressLines": [
+   "Paseo Constituyentes No. 1601",
+   "Col. Los Pájaros, C.P. 76900"
+  ],
+  "state": "QUERÉTARO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 996",
+  "postalCode": "76900"
+ },
+ "0997": {
+  "code": "0997",
+  "directoryCode": 997,
+  "name": "GRAN PATIO TOLUCA",
+  "format": "MEGA SORIANA",
+  "addressLines": [
+   "Av. Miguel Hidalgo y Costilla No. 1350",
+   "Col. Barrio San Sebastián, C.P. 50090"
+  ],
+  "state": "MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 997",
+  "postalCode": "50090"
+ },
+ "0998": {
+  "code": "0998",
+  "directoryCode": 998,
+  "name": "LA VILLA TEPEYAC",
+  "format": "MEGA SORIANA",
+  "addressLines": [
+   "Prolongación Calzada de los Misterios 62",
+   "Col. Guadalupe Tepeyac, Gustavo A. Madero, C.P. 7840"
+  ],
+  "state": "CIUDAD DE MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 998",
+  "postalCode": "7840",
+  "note": "El código postal aparece como 7840 en el directorio; se conserva tal como está impreso."
+ },
+ "0999": {
+  "code": "0999",
+  "directoryCode": 999,
+  "name": "LEÓN INSURGENTES",
+  "format": "MEGA SORIANA",
+  "addressLines": [
+   "Prolongación Blvd. José María Morelos 530, esq. Paseo de los Insurgentes",
+   "Col. Granjas del Palote, C.P. 37130, León"
+  ],
+  "state": "GUANAJUATO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 999",
+  "postalCode": "37130"
+ },
+ "1001": {
+  "code": "1001",
+  "directoryCode": 1001,
+  "name": "TORREÓN",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Av. Revolución y Blvd. Saltillo 400",
+   "Fracc. Los Ángeles, C.P. 27267"
+  ],
+  "state": "COAHUILA DE ZARAGOZA",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 1001",
+  "postalCode": "27267"
+ },
+ "1002": {
+  "code": "1002",
+  "directoryCode": 1002,
+  "name": "MONCLOVA",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Calle Huemac No. 1101",
+   "Col. Anáhuac, C.P. 25750"
+  ],
+  "state": "COAHUILA DE ZARAGOZA",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 1002",
+  "postalCode": "25750"
+ },
+ "1003": {
+  "code": "1003",
+  "directoryCode": 1003,
+  "name": "CHIHUAHUA",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Periférico de la Juventud, esq. Av. Francisco Villa"
+  ],
+  "state": "CHIHUAHUA",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 1003"
+ },
+ "1004": {
+  "code": "1004",
+  "directoryCode": 1004,
+  "name": "SALTILLO",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Blvd. Luis Echeverría"
+  ],
+  "state": "COAHUILA DE ZARAGOZA",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 1004"
+ },
+ "1005": {
+  "code": "1005",
+  "directoryCode": 1005,
+  "name": "PACHUCA",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Blvd. Nuevo Hidalgo"
+  ],
+  "state": "HIDALGO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 39/82, DET 1005"
+ },
+ "1006": {
+  "code": "1006",
+  "directoryCode": 1006,
+  "name": "VILLAHERMOSA",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Carlos Pellicer Cámara, esq. Paseo Uzumacinta"
+  ],
+  "state": "TABASCO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1006"
+ },
+ "1007": {
+  "code": "1007",
+  "directoryCode": 1007,
+  "name": "SAN JERÓNIMO",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Av. José Garza Ramírez y Av. Rogelio Cantú"
+  ],
+  "state": "NUEVO LEÓN",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1007"
+ },
+ "1008": {
+  "code": "1008",
+  "directoryCode": 1008,
+  "name": "TUXTLA GUTIÉRREZ",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Blvd. Andrés Serra Rojas, esq. con Blvd. Albino Corzo"
+  ],
+  "state": "CHIAPAS",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1008"
+ },
+ "1009": {
+  "code": "1009",
+  "directoryCode": 1009,
+  "name": "COLIMA",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Av. María Ahumada de Gómez, esq. Fco. Cárdenas Barajas"
+  ],
+  "state": "COLIMA",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1009"
+ },
+ "1010": {
+  "code": "1010",
+  "directoryCode": 1010,
+  "name": "SAN LUCAS",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Blvd. Lázaro Cárdenas, esq. Paseo del Pescador"
+  ],
+  "state": "BAJA CALIFORNIA SUR",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1010"
+ },
+ "1011": {
+  "code": "1011",
+  "directoryCode": 1011,
+  "name": "TAMPICO",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Av. Ejército Mexicano y Diagonal Norte-Sur"
+  ],
+  "state": "TAMAULIPAS",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1011"
+ },
+ "1012": {
+  "code": "1012",
+  "directoryCode": 1012,
+  "name": "LA PAZ",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Blvd. Forjadores de Sudcalifornia, esq. Luis Donaldo Colosio"
+  ],
+  "state": "BAJA CALIFORNIA SUR",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1012"
+ },
+ "1013": {
+  "code": "1013",
+  "directoryCode": 1013,
+  "name": "NUEVO LAREDO",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Av. Reforma y 15 de Septiembre"
+  ],
+  "state": "TAMAULIPAS",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1013"
+ },
+ "1014": {
+  "code": "1014",
+  "directoryCode": 1014,
+  "name": "REYNOSA",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Blvd. Hidalgo y Fuentes de Diana, km 101"
+  ],
+  "state": "TAMAULIPAS",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1014"
+ },
+ "1015": {
+  "code": "1015",
+  "directoryCode": 1015,
+  "name": "DURANGO",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Av. Heroico Colegio Militar y Av. 20 de Noviembre"
+  ],
+  "state": "DURANGO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1015"
+ },
+ "1016": {
+  "code": "1016",
+  "directoryCode": 1016,
+  "name": "CANCÚN",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Av. Andrés Quintana Roo entre Av. Kohunlich, calle Farallón y Av. Itzamal"
+  ],
+  "state": "QUINTANA ROO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1016"
+ },
+ "1017": {
+  "code": "1017",
+  "directoryCode": 1017,
+  "name": "COACALCO",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Av. Vial López Portillo"
+  ],
+  "state": "MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1017"
+ },
+ "1018": {
+  "code": "1018",
+  "directoryCode": 1018,
+  "name": "IXTAPALUCA",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Carretera Federal México-Cuautla km 32.5"
+  ],
+  "state": "MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1018"
+ },
+ "1019": {
+  "code": "1019",
+  "directoryCode": 1019,
+  "name": "GÓMEZ PALACIO",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Boulevard Miguel Alemán"
+  ],
+  "state": "DURANGO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1019"
+ },
+ "1020": {
+  "code": "1020",
+  "directoryCode": 1020,
+  "name": "TOLUCA",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Blvd. Aeropuerto Miguel Alemán No. 55, esq. Paseo Tollocan"
+  ],
+  "state": "MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1020"
+ },
+ "1021": {
+  "code": "1021",
+  "directoryCode": 1021,
+  "name": "LINCOLN",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Abraham Lincoln 3501-A"
+  ],
+  "state": "NUEVO LEÓN",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1021",
+  "note": "El renglón de dirección queda cortado en el extracto del PDF después de “entre José Eleuterio Gzz. y”; no se completa por inferencia."
+ },
+ "1022": {
+  "code": "1022",
+  "directoryCode": 1022,
+  "name": "HERMOSILLO",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Blvd. Río Sonora Nte. No. 188, esq. con Blvd. Solidaridad"
+  ],
+  "state": "SONORA",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1022"
+ },
+ "1023": {
+  "code": "1023",
+  "directoryCode": 1023,
+  "name": "CULIACÁN",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Blvd. Universitarios No. 435 pte., esq. Blvd. Enrique Sánchez"
+  ],
+  "state": "SINALOA",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1023"
+ },
+ "1024": {
+  "code": "1024",
+  "directoryCode": 1024,
+  "name": "PLAYA DEL CARMEN",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Carretera Federal Chetumal-Cancún No. 2100"
+  ],
+  "state": "QUINTANA ROO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1024"
+ },
+ "1025": {
+  "code": "1025",
+  "directoryCode": 1025,
+  "name": "SAN JOSÉ VIEJO",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Carretera Transpeninsular San José-Aeropuerto km 39"
+  ],
+  "state": "BAJA CALIFORNIA SUR",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1025"
+ },
+ "1026": {
+  "code": "1026",
+  "directoryCode": 1026,
+  "name": "ECATEPEC",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Av. Vía Morelos 351-A, esq. Av. Circunvalación S/N"
+  ],
+  "state": "MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1026"
+ },
+ "1027": {
+  "code": "1027",
+  "directoryCode": 1027,
+  "name": "SANTA MÓNICA",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Carretera México-Querétaro km 23.5 S/N"
+  ],
+  "state": "MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1027"
+ },
+ "1028": {
+  "code": "1028",
+  "directoryCode": 1028,
+  "name": "QUERÉTARO",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Av. Prolongación Zaragoza No. 62-A"
+  ],
+  "state": "QUERÉTARO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1028"
+ },
+ "1029": {
+  "code": "1029",
+  "directoryCode": 1029,
+  "name": "UNIVERSIDAD",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Universidad No. 103, Col. Residencial El Roble"
+  ],
+  "state": "NUEVO LEÓN",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1029"
+ },
+ "1030": {
+  "code": "1030",
+  "directoryCode": 1030,
+  "name": "REVOLUCIÓN",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Revolución, cruce con José Alvarado No. 1009"
+  ],
+  "state": "NUEVO LEÓN",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1030"
+ },
+ "1031": {
+  "code": "1031",
+  "directoryCode": 1031,
+  "name": "PUEBLA",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Blvd. 5 de Mayo No. 418, Col. Xanenetla"
+  ],
+  "state": "PUEBLA",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1031"
+ },
+ "1032": {
+  "code": "1032",
+  "directoryCode": 1032,
+  "name": "PUERTA DE HIERRO (LINCOLN)",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Av. Abraham Lincoln No. 4001-A, C.P. 64346"
+  ],
+  "state": "NUEVO LEÓN",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1032",
+  "postalCode": "64346"
+ },
+ "1033": {
+  "code": "1033",
+  "directoryCode": 1033,
+  "name": "PIEDRAS NEGRAS",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Blvd. República y Lib. Manuel Pérez Treviño No. 1800"
+  ],
+  "state": "COAHUILA DE ZARAGOZA",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1033"
+ },
+ "1034": {
+  "code": "1034",
+  "directoryCode": 1034,
+  "name": "VÍA VALLEJO",
+  "format": "CITY CLUB",
+  "addressLines": [
+   "Calzada Vallejo No. 250, Col. Santa Cruz de las Salinas, C.P. 02340"
+  ],
+  "state": "CIUDAD DE MÉXICO",
+  "source": "Directorio Tiendas Soriana Sep 2020, página 40/82, DET 1034",
+  "postalCode": "02340"
+ }
+};
+function resolveBranch(code){return BRANCH_CATALOG[String(code||'').padStart(4,'0')]||null;}
+function branchDisplayLabel(code,name){
+ const rawCode=String(code??'').trim();
+ const code4=/^\d{1,4}$/.test(rawCode)?rawCode.padStart(4,'0'):'';
+ const record=resolveBranch(code4||rawCode);
+ let branchName=String(record?.name||name||'').trim();
+ const numericCode=code4?String(Number(code4)):'';
+ const isCodeFallback=!!numericCode&&new RegExp(`^(?:CLAVE|SUCURSAL)\\s*0*${numericCode}$`,'i').test(branchName);
+ if(!branchName||isCodeFallback||/^SUCURSAL NO IDENTIFICADA$/i.test(branchName))return code4||branchName||'SUCURSAL NO IDENTIFICADA';
+ return code4?`${branchName} · ${code4}`:branchName;
+}
+function normalizeTicket(src,index){
+ const capture=src.capture||src.data||src.preview||{};
+ const ticketNumber=String(src.ticketNumber??src.ticket??capture.ticketNumber??'').trim();
+ if(!ticketNumber)return null;
+ const decoded=decodeTicketIdentity(ticketNumber);
+ const items=(src.items??capture.items??src.products??[]).map(normalizeItem);
+ const totals=src.totals??capture.totals??{};
+ const portalBranch=String(src.branch??capture.branch??'').trim();
+ const portalDate=toIsoDate(src.purchaseDate??capture.purchaseDate??'');
+ const branchCode=src.branchCode||capture.branchCode||decoded.branchCode;
+ const branchRecord=resolveBranch(branchCode);
+ const sourceBranchName=String(src.branchName??capture.branchName??'').trim();
+ const sourceAddressLines=Array.isArray(src.branchAddressLines??capture.branchAddressLines)
+  ?(src.branchAddressLines??capture.branchAddressLines).map(x=>String(x||'').trim()).filter(Boolean):[];
+ const sourceAddress=String(src.branchAddress??capture.branchAddress??'').trim();
+ const manualBranch=(src.branchSource==='manual_viewer'||capture.branchSource==='manual_viewer');
+ const catalogPreferred=!!branchRecord&&!manualBranch;
+ const branchName=manualBranch
+  ?(sourceBranchName||portalBranch||branchRecord?.name||'')
+  :(catalogPreferred?(branchRecord.name||sourceBranchName):(sourceBranchName||branchRecord?.name||''));
+ const branch=manualBranch
+  ?(portalBranch||branchName||(branchCode?`CLAVE ${branchCode}`:''))
+  :(catalogPreferred?(branchRecord.name||portalBranch||branchName):(portalBranch||branchName||(branchCode?`CLAVE ${branchCode}`:'')));
+ const branchAddressLines=manualBranch
+  ?(sourceAddressLines.length?sourceAddressLines:(sourceAddress?sourceAddress.split(/,\s*/).filter(Boolean):(branchRecord?.addressLines||[])))
+  :(catalogPreferred?(branchRecord.addressLines||[]):(sourceAddressLines.length?sourceAddressLines:(branchRecord?.addressLines||[])));
+ const branchAddress=manualBranch
+  ?(sourceAddress||branchAddressLines.join(', '))
+  :(catalogPreferred?branchAddressLines.join(', '):(sourceAddress||branchAddressLines.join(', ')));
+ const purchaseDate=portalDate||decoded.encodedPurchaseDate;
+ const branchSource=manualBranch?'manual_viewer':catalogPreferred?'branch_catalog':(src.branchSource&&src.branchSource!=='missing'?src.branchSource:capture.branchSource&&capture.branchSource!=='missing'?capture.branchSource:(portalBranch?'portal_preview':decoded.branchCode?'ticket_prefix':'missing'));
+ return {id:src.id||makeId({ticketNumber,series:src.series??capture.series,branch,purchaseDate})||`${ticketNumber}-${index}`,ticketNumber,branchCode,branch,branchName,branchAddress,branchAddressLines,branchFormat:src.branchFormat??capture.branchFormat??branchRecord?.format??'',branchSource,purchaseDate,purchaseDateSource:(src.purchaseDateSource&&src.purchaseDateSource!=='missing'?src.purchaseDateSource:capture.purchaseDateSource&&capture.purchaseDateSource!=='missing'?capture.purchaseDateSource:(portalDate?'portal_preview':decoded.valid?'ticket_prefix':'missing')),purchaseDateRaw:src.purchaseDateRaw??capture.purchaseDateRaw??'',purchaseTime:src.purchaseTime??capture.purchaseTime??'',companyName:src.companyName??capture.companyName??branchRecord?.companyName??'Tiendas Soriana, S.A. de C.V.',companyRfc:src.companyRfc??capture.companyRfc??branchRecord?.rfc??'TSO991022PB6',taxRegime:src.taxRegime??capture.taxRegime??branchRecord?.taxRegime??'REGIMEN GENERAL DE LEY PERSONAS MORALES',paymentMethod:src.paymentMethod??capture.paymentMethod??'',cashier:src.cashier??capture.cashier??'',points:src.points??capture.points??null,savingsPercent:src.savingsPercent??capture.savingsPercent??null,savingsAmount:src.savingsAmount??capture.savingsAmount??null,receiptVersion:src.receiptVersion??capture.receiptVersion??'4.29.1.0',series:String(src.series??capture.series??''),currency:src.currency||'MXN',status:src.status||'captured',detail:src.detail||'',capturedAt:src.capturedAt||'',items,totals,warnings:Array.isArray(src.warnings)?src.warnings:[],sourceFile:src.sourceFile||''};
+}
+let tickets=[];let activeTicketId=null;let lastFiles=[];
+function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({schema:'soriticket.viewer.local',version:1,savedAt:new Date().toISOString(),tickets}));return true;}catch(e){setNotice('No fue posible guardar todos los datos en el almacenamiento local. Exporta el JSON como respaldo.','warning');return false;}}
+function loadLocal(){try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return;const parsed=JSON.parse(raw);if(Array.isArray(parsed.tickets))tickets=parsed.tickets.map(normalizeTicket).filter(Boolean);}catch(e){setNotice('El almacenamiento local está dañado o no está disponible. Puedes cargar nuevamente tus archivos JSON.','warning');}}
+function setNotice(message,type='info'){const n=$('globalNotice');n.textContent=message;n.className=`notice${type==='warning'?' warning':type==='success'?' success':''}`;}
+function extractTickets(json){if(Array.isArray(json))return json;if(Array.isArray(json?.tickets))return json.tickets;if(Array.isArray(json?.records))return json.records;throw new Error('El JSON no contiene un arreglo “tickets” o “records”.');}
+async function importFiles(files){if(!files.length)return;let added=0,updated=0,skipped=0;for(const file of files){try{const data=JSON.parse(await file.text());const incoming=extractTickets(data);for(const item of incoming){const t=normalizeTicket(item,tickets.length);if(!t){skipped++;continue;}t.sourceFile=file.name;const existingIndex=tickets.findIndex(x=>x.id===t.id||x.ticketNumber===t.ticketNumber&&x.series===t.series&&x.branch===t.branch&&x.purchaseDate===t.purchaseDate);if(existingIndex>=0){const old=tickets[existingIndex];if(t.items.length>=old.items.length){tickets[existingIndex]={...old,...t};updated++;}else skipped++;}else{tickets.push(t);added++;}}lastFiles.push(file.name);}catch(error){setNotice(`No se pudo cargar ${file.name}: ${error.message}`,'warning');}}
+save();refreshFilters();render();setNotice(`Importación terminada: ${added} tickets nuevos, ${updated} actualizados y ${skipped} ignorados por duplicado o formato.`, 'success');}
+function currentFilters(){return {q:normalize($('searchText').value),branch:$('branchFilter').value,from:$('dateFrom').value,to:$('dateTo').value,dept:$('departmentFilter').value,status:$('statusFilter').value,sort:$('sortOrder').value};}
+function filtered(){const f=currentFilters();let arr=tickets.filter(t=>{if(f.branch&&t.branch!==f.branch)return false;if(f.from&&(!t.purchaseDate||t.purchaseDate<f.from))return false;if(f.to&&(!t.purchaseDate||t.purchaseDate>f.to))return false;if(f.status==='captured'&&!['captured'].includes(t.status))return false;if(f.status==='captured_incomplete'&&t.status!=='captured_incomplete')return false;if(f.status==='other'&&['captured','captured_incomplete'].includes(t.status))return false;if(f.dept&&!t.items.some(i=>i.department===f.dept))return false;if(f.q){const hay=[t.ticketNumber,t.series,t.branch,t.purchaseDate,t.purchaseTime,...t.items.flatMap(i=>[i.code,i.description,departmentName(i.department)])].map(normalize).join(' ');if(!hay.includes(f.q))return false;}return true;});arr.sort((a,b)=>{if(f.sort==='amount-desc')return (amount(b)||0)-(amount(a)||0);if(f.sort==='amount-asc')return (amount(a)||0)-(amount(b)||0);if(f.sort==='branch')return a.branch.localeCompare(b.branch,'es');const cmp=(a.purchaseDate||'').localeCompare(b.purchaseDate||'');return f.sort==='oldest'?cmp:-cmp;});return arr;}
+function refreshFilters(){const old=$('branchFilter').value;const branches=[...new Set(tickets.map(t=>t.branch).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));$('branchFilter').replaceChildren(new Option('Todas las sucursales',''));branches.forEach(b=>$('branchFilter').add(new Option(b,b)));$('branchFilter').value=branches.includes(old)?old:'';const oldD=$('departmentFilter').value;$('departmentFilter').replaceChildren(new Option('Todos los departamentos',''));DEPARTMENTS.forEach(d=>$('departmentFilter').add(new Option(d.name,d.id)));$('departmentFilter').value=DEPARTMENTS.some(d=>d.id===oldD)?oldD:'';}
+function formatDate(v){if(!v)return 'Fecha no disponible';const s=toIsoDate(v);const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return s;return `${m[3]}/${m[2]}/${m[1]}`;}
+function render(){const arr=filtered();const grid=$('ticketGrid');grid.replaceChildren();$('emptyState').classList.toggle('hidden',tickets.length>0&&arr.length>0);if(!tickets.length){$('emptyState').classList.remove('hidden');$('emptyState').innerHTML='<strong>Tu archivo de tickets aparecerá aquí</strong>Importa un JSON desde el botón “Cargar JSON”. El visor trabaja localmente con los archivos que selecciones.';}else if(!arr.length){$('emptyState').classList.remove('hidden');$('emptyState').innerHTML='<strong>No hay tickets con esos filtros</strong>Modifica la búsqueda, la sucursal, el rango de fechas o el departamento.';}
+$('resultsCount').textContent=`${arr.length.toLocaleString('es-MX')} de ${tickets.length.toLocaleString('es-MX')} tickets encontrados`;
+const total=arr.reduce((sum,t)=>sum+(amount(t)||0),0);$('statTotal').textContent=tickets.length.toLocaleString('es-MX');$('statAmount').textContent=total.toLocaleString('es-MX',{style:'currency',currency:'MXN'});$('statProducts').textContent=arr.reduce((sum,t)=>sum+t.items.length,0).toLocaleString('es-MX');$('statBranches').textContent=new Set(arr.map(t=>t.branch).filter(Boolean)).size.toLocaleString('es-MX');
+$('exportJsonAll').disabled=!tickets.length;$('exportZipAll').disabled=!arr.length;$('exportZipFiltered').disabled=!arr.length;
+arr.forEach(t=>grid.appendChild(createCard(t)));}
+function createCard(t){const card=document.createElement('article');card.className='ticket-card';card.dataset.id=t.id;const top=document.createElement('div');top.className='card-top';const code=document.createElement('div');const codeStrong=document.createElement('div');codeStrong.className='ticket-code';codeStrong.textContent=`Ticket ${t.ticketNumber}`;const date=document.createElement('div');date.className='ticket-date';date.textContent=`${formatDate(t.purchaseDate)}${t.purchaseTime?` · ${t.purchaseTime}`:''}`;code.append(codeStrong,date);const pill=document.createElement('span');pill.className=`status-pill ${t.status==='captured_incomplete'?'incomplete':!['captured','captured_incomplete'].includes(t.status)?'other':''}`;pill.textContent=t.status==='captured'?'Capturado':t.status==='captured_incomplete'?'Incompleto':t.status||'Sin estado';top.append(code,pill);card.appendChild(top);
+const meta=document.createElement('div');meta.className='card-meta';meta.append(metaCell('Sucursal',branchDisplayLabel(t.branchCode,t.branchName||t.branch)||'No disponible'),metaCell('Total',money(amount(t),t.totals?.total?.raw)),metaCell('Serie',t.series||'—'),metaCell('Productos',String(t.items.length)));card.appendChild(meta);
+const itemWrap=document.createElement('div');itemWrap.className='card-items';t.items.slice(0,3).forEach(i=>{const row=document.createElement('div');row.className='item-preview';const desc=document.createElement('span');desc.className='desc';desc.textContent=i.description;const val=document.createElement('span');val.className='amount';val.textContent=money(i.amount,i.amountRaw);row.append(desc,val);itemWrap.appendChild(row);});if(t.items.length>3){const more=document.createElement('div');more.className='more-items';more.textContent=`y ${t.items.length-3} productos más`;itemWrap.appendChild(more);}if(!t.items.length){const no=document.createElement('div');no.className='more-items';no.textContent='No hay filas de productos disponibles en la captura.';itemWrap.appendChild(no);}card.appendChild(itemWrap);
+const tags=document.createElement('div');tags.className='dept-tags';[...new Set(t.items.map(i=>i.department))].slice(0,5).forEach(d=>{const tag=document.createElement('span');tag.className='dept-tag';tag.textContent=departmentName(d);tags.appendChild(tag);});if(!t.branch||!t.purchaseDate){const tag=document.createElement('span');tag.className='dept-tag';tag.textContent='Completar sucursal/fecha';tags.appendChild(tag);}card.appendChild(tags);
+const foot=document.createElement('div');foot.className='card-footer';foot.append(actionButton('Ver ticket','view',t.id,'btn btn-primary btn-small'),actionButton('PDF','pdf',t.id,'btn btn-light btn-small'),actionButton('Imprimir','print',t.id,'btn btn-light btn-small'));card.appendChild(foot);return card;}
+function metaCell(label,value){const box=document.createElement('div');const l=document.createElement('div');l.className='meta-label';l.textContent=label;const v=document.createElement('div');v.className='meta-value';v.textContent=value;box.append(l,v);return box;}
+function actionButton(label,action,id,cls){const b=document.createElement('button');b.type='button';b.className=cls;b.dataset.action=action;b.dataset.id=id;b.textContent=label;return b;}
+function getTotal(t,key){const found=Object.entries(t.totals||{}).find(([k])=>normalize(k)===normalize(key));if(!found)return 'No disponible';const val=found[1];return money(typeof val==='object'?val.value:val,typeof val==='object'?val.raw:'');}
+function receiptInfo(t){
+ const branchRecord=resolveBranch(t.branchCode);
+ const manualBranch=t.branchSource==='manual_viewer';
+ const branchName=manualBranch
+  ?(t.branchName||t.branch||branchRecord?.name||(t.branchCode?`SUCURSAL ${t.branchCode}`:'SUCURSAL NO IDENTIFICADA'))
+  :(branchRecord?.name||t.branchName||t.branch||(t.branchCode?`SUCURSAL ${t.branchCode}`:'SUCURSAL NO IDENTIFICADA'));
+ const addressLines=manualBranch
+  ?(Array.isArray(t.branchAddressLines)&&t.branchAddressLines.length?t.branchAddressLines:(String(t.branchAddress||'').split(/,\s*/).filter(Boolean)))
+  :(branchRecord?.addressLines?.length?branchRecord.addressLines:(Array.isArray(t.branchAddressLines)&&t.branchAddressLines.length?t.branchAddressLines:String(t.branchAddress||'').split(/,\s*/).filter(Boolean)));
+ const total=amount(t);
+ const discountValue=t.savingsAmount!=null?num(t.savingsAmount):num(t.totals?.descuentos?.value??t.totals?.descuentos?.raw);
+ const discount=discountValue==null?0:Math.abs(discountValue);
+ const savedPercent=num(t.savingsPercent)??(discount>0&&total!=null&&total+discount>0?discount/(total+discount)*100:null);
+ const quantity=t.items.reduce((sum,item)=>sum+(num(item.quantityRaw??item.quantity)??1),0);
+ const payment=String(t.paymentMethod||'').trim();
+ const points=t.points==null?'':String(t.points).trim();
+ const cashier=String(t.cashier||'').trim();
+ return {branchName,branchLabel:branchDisplayLabel(t.branchCode,branchName),addressLines,companyName:t.companyName||branchRecord?.companyName||'Tiendas Soriana, S.A. de C.V.',companyRfc:t.companyRfc||branchRecord?.rfc||'TSO991022PB6',taxRegime:t.taxRegime||branchRecord?.taxRegime||'REGIMEN GENERAL DE LEY PERSONAS MORALES',total,discount,savedPercent,articleCount:Number.isInteger(quantity)?String(quantity):quantity.toLocaleString('es-MX',{maximumFractionDigits:3}),payment,points,cashier,receiptVersion:t.receiptVersion||'4.29.1.0'};
+}
+function receiptMoney(v,raw=''){const r=rawValue(raw);if(r)return r;const n=num(v);return n==null?'':n.toFixed(2);}
+function receiptLogoSvg(){return `<svg class="soriana-logo" viewBox="0 0 220 48" role="img" aria-label="Soriana"><path d="M10 25C-1 13 7 2 19 4c8 1 13 9 12 17-1 7-7 14-15 16-1-5-3-9-6-12Z"/><path d="M22 23C21 12 29 2 39 5c8 2 10 10 5 17-4 6-12 10-18 11-2-3-3-6-4-10Z"/><text x="52" y="36" font-family="Arial,Helvetica,sans-serif" font-size="37" font-style="normal" font-weight="900" letter-spacing="-2">Soriana</text></svg>`;}
+function receiptSubtotalRowsData(t){
+ const totals=t?.totals&&typeof t.totals==='object'?t.totals:{};const leaves=[];
+ const walk=(value,path='',depth=0)=>{
+  if(depth>3||value==null)return;
+  if(typeof value==='object'&&!Array.isArray(value)){
+   if(Object.prototype.hasOwnProperty.call(value,'value')||Object.prototype.hasOwnProperty.call(value,'raw')){leaves.push({path,value});return;}
+   for(const [key,child] of Object.entries(value))walk(child,path?`${path} ${key}`:key,depth+1);
+  }else if(typeof value==='number'||typeof value==='string'){leaves.push({path,value});}
+ };
+ for(const [key,value] of Object.entries(totals))walk(value,key,0);
+ const rows=[];const seen=new Set();
+ for(const entry of leaves){
+  const normalized=normalize(entry.path);const isSubtotal=/(^|\s)sub\s*total($|\s)/.test(normalized);
+  const taxKey=normalized.replace(/[_-]+/g,' ');
+  const isTax=/\b(?:iva|ieps)(?:\b|(?=[0-9%]))/.test(taxKey)||/impuesto/.test(taxKey)||/\btax(?:es)?\b/.test(taxKey);
+  if(!isSubtotal&&!isTax)continue;
+  const amountValue=entry.value&&typeof entry.value==='object'?(entry.value.value??num(entry.value.raw)):num(entry.value);
+  const raw=entry.value&&typeof entry.value==='object'?rawValue(entry.value.raw):'';
+  if(amountValue==null&&!raw)continue;
+  if(isTax&&amountValue===0)continue;
+  const dedupe=`${isSubtotal?'subtotal':'tax'}:${normalized}:${raw||amountValue}`;if(seen.has(dedupe))continue;seen.add(dedupe);
+  let label='';
+  if(isSubtotal)label='SUBTOTAL';
+  else if(/\bieps\b/.test(taxKey))label=entry.path.toUpperCase().replace(/[_-]+/g,' ').replace(/IMPUESTO ESPECIAL[^ ]*/,'IEPS');
+  else if(/\biva\b/.test(taxKey))label=entry.path.toUpperCase().replace(/[_-]+/g,' ').replace(/IMPUESTO AL VALOR AGREGADO/,'IVA');
+  else label=entry.path.toUpperCase().replace(/[_-]+/g,' ');
+  rows.push({label,value:amountValue,raw,kind:isSubtotal?'subtotal':'tax'});
+ }
+ rows.sort((a,b)=>(a.kind==='subtotal'?-1:b.kind==='subtotal'?1:0));
+ return rows;
+}
+function receiptTotalRows(t,className='soriana-total-row'){
+ return receiptSubtotalRowsData(t).map(row=>`<div class="${className} soriana-subtotal-line"><span>${escapeHtml(row.label)}</span><span>${escapeHtml(receiptMoney(row.value,row.raw)||'—')}</span></div>`).join('');
+}
+function receiptItemsTable(t){
+ const rows=t.items.map(i=>`<div class="soriana-sales-row"><span class="qty">${escapeHtml(i.quantityRaw||i.quantity||'1')}</span><span class="desc">${escapeHtml(i.description||'Descripción no disponible')}</span><span class="unit">${escapeHtml(receiptMoney(i.unitPrice,i.unitPriceRaw)||'—')}</span><span class="sum">${escapeHtml(receiptMoney(i.amount,i.amountRaw)||'—')}</span></div>`).join('');
+ return `<div class="soriana-sales-table" role="group" aria-label="Detalle de productos"><div class="soriana-sales-header" aria-hidden="true"><span>Cantidad</span><span>Descripción</span><span>Precio</span><span>Importe</span></div><div class="soriana-sales-body">${rows}</div></div>`;
+}
+function receiptElement(t){
+ const d=receiptInfo(t);const root=document.createElement('div');root.className='receipt soriana-receipt';
+ const items=receiptItemsTable(t);
+ const payment=d.payment?`<div class="soriana-total-row"><span>${escapeHtml(d.payment.toLocaleUpperCase('es-MX'))}</span><span>${escapeHtml(receiptMoney(d.total,t.totals?.total?.raw))}</span></div>`:'';
+ const savings=d.discount>0?`<div class="soriana-savings">HOY TE AHORRASTE${d.savedPercent!=null?` EL ${d.savedPercent.toFixed(2)}%`:''} DE TU COMPRA,<br>QUE SON $${d.discount.toFixed(2)} MENOS</div>`:`<div class="soriana-savings">GRACIAS POR SU COMPRA</div>`;
+ const pointLine=d.points?`<div class="soriana-points">Puntos SORIANA que puede acumular: ${escapeHtml(d.points)}</div>`:'';
+ const cashierLine=d.cashier?`<div class="soriana-cashier">Le Atendió: ${escapeHtml(d.cashier)}</div>`:'';
+ root.innerHTML=`<header class="soriana-header"><div class="soriana-logo-wrap">${receiptLogoSvg()}</div><div class="soriana-branch">${escapeHtml(d.branchLabel)}</div><div class="soriana-company">${escapeHtml(d.companyName)} ${escapeHtml(d.companyRfc)}</div><div class="soriana-company">${escapeHtml(d.taxRegime)}</div>${d.addressLines.map(line=>`<div class="soriana-address">${escapeHtml(line)}</div>`).join('')}</header>
+ <div class="soriana-meta"><div>${escapeHtml(formatDate(t.purchaseDate))}${t.purchaseTime?` ${escapeHtml(t.purchaseTime)}`:''}</div><div>${escapeHtml(t.ticketNumber)}</div></div>
+ <div class="soriana-items">${t.items.length?items:'<div class="soriana-no-items">Sin detalle de productos disponible</div>'}</div>
+ <section class="soriana-totals">${receiptTotalRows(t)}<div class="soriana-total-row soriana-grand"><span>TOTAL</span><span>${escapeHtml(receiptMoney(d.total,t.totals?.total?.raw)||'NO DISPONIBLE')}</span></div>${payment}<div class="soriana-articles">Artículos ${escapeHtml(d.articleCount)}</div></section>
+ ${savings}${pointLine}
+ <section class="soriana-service"><div>Para mayor información con todo lo relacionado a servicio a domicilio, atención a clientes y facturación de donaciones, consulta en <b>www.soriana.com</b></div><div><b>SERVICIO A DOMICILIO:</b> 800 220 1234</div><div><b>ATENCIÓN A CLIENTES:</b> 81 8329-9252</div><div><b>ATENCIÓN A CLIENTES:</b> 01 81 8329-9252</div><div><b>www.soriana.com/condiciones</b></div><div>Las restricciones sobre promociones y términos aplicables.</div></section>
+ ${cashierLine}
+ <section class="soriana-mobile">Con Soriana Móvil obtén megas GRATIS y el DOBLE DE TIEMPO AIRE en tus recargas con puntos Soriana. Conoce más en <b>www.sorianamovil.com</b></section>
+ <div class="soriana-brand-footer">MARCA SORIANA: CALIDAD AL MEJOR PRECIO</div><div class="soriana-version">Versión: ${escapeHtml(d.receiptVersion)}</div>
+ <div class="soriana-barcode">${itfBarcodeSvg(t.ticketNumber)}</div><div class="soriana-barcode-digits">${escapeHtml(t.ticketNumber)}</div>`;
+ return root;
+}
+function itfBarcodeSvg(value){const patterns=['nnwwn','wnnnw','nwnnw','wwnnn','nnwnw','wnwnn','nwwnn','nnnww','wnnwn','nwnwn'];let digits=String(value||'').replace(/\D/g,'');if(digits.length%2)digits='0'+digits;let seq='nnnn';for(let i=0;i<digits.length;i+=2){const a=patterns[Number(digits[i])],b=patterns[Number(digits[i+1])];for(let j=0;j<5;j++)seq+=a[j]+b[j];}seq+='wnn';let x=5,bars='';for(let i=0;i<seq.length;i++){const w=seq[i]==='w'?3:1;if(i%2===0)bars+=`<rect x="${x}" y="0" width="${w}" height="42"/>`;x+=w;}return `<svg viewBox="0 0 ${x+5} 42" role="img" aria-label="Código de barras ITF ${escapeHtml(digits)}" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="white"/>${bars}</svg>`;}
+function rule(){const hr=document.createElement('div');hr.className='receipt-line';return hr;}
+function openTicket(id){const t=tickets.find(x=>x.id===id);if(!t)return;activeTicketId=id;$('modalTitle').textContent=`Ticket ${t.ticketNumber}`;$('receiptView').replaceChildren(receiptElement(t));$('editBranch').value=t.branch||'';$('editPurchaseDate').value=/^\d{4}-\d{2}-\d{2}$/.test(t.purchaseDate)?t.purchaseDate:'';$('editPurchaseTime').value=t.purchaseTime||'';$('metadataSource').textContent=`Sucursal: ${branchDisplayLabel(t.branchCode,t.branchName||t.branch)} (${t.branchSource||'sin origen'}). Fecha: ${t.purchaseDateSource||'sin origen'}; los primeros 8 dígitos del ticket se usan para derivar sucursal y fecha.`;renderLineEditor(t);$('ticketModal').classList.add('open');$('ticketModal').setAttribute('aria-hidden','false');}
+function renderLineEditor(t){const host=$('lineEditor');host.replaceChildren();if(!t.items.length){const p=document.createElement('div');p.className='mini-alert';p.textContent='Este registro no contiene productos para clasificar.';host.appendChild(p);return;}t.items.forEach((item,index)=>{const row=document.createElement('div');row.className='line-editor-row';const title=document.createElement('strong');title.textContent=`${index+1}. ${item.description}`;const detail=document.createElement('small');detail.textContent=`Código: ${item.code||'—'} · Cantidad: ${item.quantityRaw||item.quantity||'—'}`;const select=document.createElement('select');select.dataset.itemIndex=String(index);DEPARTMENTS.forEach(d=>select.add(new Option(d.name,d.id)));select.value=item.department||classify(item.description,item.code);select.addEventListener('change',()=>{item.department=select.value;item.departmentSource='manual';save();render();});row.append(title,detail,select);host.appendChild(row);});}
+function closeModal(){ $('ticketModal').classList.remove('open');$('ticketModal').setAttribute('aria-hidden','true');activeTicketId=null;}
+function updateTicketMeta(){const t=tickets.find(x=>x.id===activeTicketId);if(!t)return;t.branch=$('editBranch').value.trim();t.branchName=t.branch;const mappedBranch=resolveBranch(t.branchCode);t.branchAddressLines=mappedBranch?.addressLines||[];t.branchAddress=t.branchAddressLines.join(', ');t.purchaseDate=$('editPurchaseDate').value;t.purchaseTime=$('editPurchaseTime').value.trim();t.branchSource='manual_viewer';t.purchaseDateSource='manual_viewer';save();$('metadataSource').textContent='Datos guardados localmente en este visor.';$('receiptView').replaceChildren(receiptElement(t));refreshFilters();render();}
+function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function printTicket(id){const t=tickets.find(x=>x.id===id);if(!t)return;const old=document.getElementById('soriticket-print-frame');if(old)old.remove();const frame=document.createElement('iframe');frame.id='soriticket-print-frame';frame.title='Impresión de ticket';frame.setAttribute('aria-hidden','true');frame.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';document.body.appendChild(frame);const doc=frame.contentDocument;doc.open();doc.write(receiptPrintHtml(t));doc.close();frame.contentWindow.addEventListener('afterprint',()=>setTimeout(()=>frame.remove(),1000),{once:true});setTimeout(()=>{if(!frame.isConnected)return;try{frame.contentWindow.focus();frame.contentWindow.print();}catch(e){console.error(e);setNotice('No fue posible abrir el diálogo de impresión.','warning');}},450);setTimeout(()=>{if(frame.isConnected)frame.remove();},120000);}
+function receiptPrintHtml(t){const d=receiptInfo(t);const items=receiptItemsTable(t);const payment=d.payment?`<div class="total-row"><span>${escapeHtml(d.payment.toLocaleUpperCase('es-MX'))}</span><span>${escapeHtml(receiptMoney(d.total,t.totals?.total?.raw))}</span></div>`:'';const discountLine=d.discount>0?`<div class="savings">HOY TE AHORRASTE${d.savedPercent!=null?` EL ${d.savedPercent.toFixed(2)}%`:''} DE TU COMPRA,<br>QUE SON $${d.discount.toFixed(2)} MENOS</div>`:'<div class="savings">GRACIAS POR SU COMPRA</div>';const points=d.points?`<div class="points">Puntos SORIANA que puede acumular: ${escapeHtml(d.points)}</div>`:'';const cashier=d.cashier?`<div class="cashier">Le Atendió: ${escapeHtml(d.cashier)}</div>`:'';return `<!doctype html><html lang="es-MX"><head><meta charset="utf-8"><title>Ticket ${escapeHtml(t.ticketNumber)}</title><style>
+@page{size:80mm auto;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;width:80mm;background:#fff;color:#000}body{font:9px/1.16 "Courier New",monospace}.receipt{width:80mm;max-width:80mm;padding:2.7mm 3mm 4mm;margin:0 auto}.header{text-align:center}.logo-wrap{width:47mm;height:10mm;margin:0 auto 1mm}.logo-wrap svg{width:100%;height:100%;display:block;fill:#000}.branch{font-size:10px;font-weight:bold;line-height:1.15;margin:1mm 0}.company,.address{font-size:8.2px;line-height:1.15}.meta{text-align:center;font-size:9px;line-height:1.25;margin:2.4mm 0}.rule{border-top:1px dashed #000;margin:1.7mm 0}.soriana-sales-table{display:block;width:100%;font:7px/1.18 "Courier New",monospace}.soriana-sales-header,.soriana-sales-row{display:grid;grid-template-columns:11% minmax(0,1fr) 20% 22%;column-gap:7px;width:100%;align-items:start}.soriana-sales-header{font-size:5.8px;font-weight:bold;line-height:1.15;white-space:nowrap;border-bottom:1px solid #000;padding:0 .5mm 1mm}.soriana-sales-header span:first-child,.soriana-sales-row .qty{text-align:right}.soriana-sales-header span:nth-child(3),.soriana-sales-header span:nth-child(4),.soriana-sales-row .unit,.soriana-sales-row .sum{text-align:right;white-space:nowrap}.soriana-sales-row{padding:.8mm .5mm 1mm;font-size:7px}.soriana-sales-row+.soriana-sales-row{border-top:1px dotted #ddd}.soriana-sales-row .desc{text-align:left;white-space:normal;overflow-wrap:anywhere;word-break:normal;min-width:0;padding-right:.3mm}.no-items{font-size:8px;text-align:center;padding:2mm 0}.totals{margin-top:1.5mm;font-size:8.5px}.total-row{display:flex;justify-content:space-between;gap:3mm;padding:.35mm 0}.total-row span:first-child{min-width:0}.total-row span:last-child{white-space:nowrap;text-align:right}.grand{font-size:10px;font-weight:bold;border-top:1px solid #000;padding-top:1.2mm;margin-top:1mm}.articles{text-align:right;margin-top:.7mm}.savings{text-align:center;font-weight:bold;line-height:1.22;margin:3.3mm 1mm 2.4mm}.points{font-size:8px;margin:2.5mm 0}.service{text-align:center;font-size:7.7px;line-height:1.2;margin-top:2.5mm}.service div{margin:.6mm 0}.cashier{text-align:center;font-size:8px;margin:2mm 0}.mobile{text-align:center;font-size:7.7px;line-height:1.2;margin:2.8mm 1mm}.brand-footer{text-align:center;font-weight:bold;font-size:8px;margin-top:4mm}.version{text-align:center;font-size:7.5px;margin-top:1mm}.barcode{height:16mm;margin:1.8mm auto .8mm;width:90%}.barcode svg{display:block;width:100%;height:100%;fill:#000}.digits{text-align:center;letter-spacing:.7px;font-size:8px}.receipt,.receipt *{overflow:visible}@media screen{body{background:#eee;padding:10px 0}.receipt{background:#fff;box-shadow:0 2px 14px #0002}}</style></head><body><main class="receipt"><header class="header"><div class="logo-wrap">${receiptLogoSvg()}</div><div class="branch">${escapeHtml(d.branchLabel)}</div><div class="company">${escapeHtml(d.companyName)} ${escapeHtml(d.companyRfc)}</div><div class="company">${escapeHtml(d.taxRegime)}</div>${d.addressLines.map(line=>`<div class="address">${escapeHtml(line)}</div>`).join('')}</header><div class="meta">${escapeHtml(formatDate(t.purchaseDate))}${t.purchaseTime?` ${escapeHtml(t.purchaseTime)}`:''}<br>${escapeHtml(t.ticketNumber)}</div><div class="rule"></div>${t.items.length?items:'<div class="no-items">Sin detalle de productos disponible</div>'}<div class="rule"></div><section class="totals">${receiptPrintTotalRows(t)}<div class="total-row grand"><span>TOTAL</span><span>${escapeHtml(receiptMoney(d.total,t.totals?.total?.raw)||'NO DISPONIBLE')}</span></div>${payment}<div class="articles">Artículos ${escapeHtml(d.articleCount)}</div></section>${discountLine}${points}<section class="service"><div>Para mayor información con todo lo relacionado a servicio a domicilio, atención a clientes y facturación de donaciones, consulta en <b>www.soriana.com</b></div><div><b>SERVICIO A DOMICILIO:</b> 800 220 1234</div><div><b>ATENCIÓN A CLIENTES:</b> 81 8329-9252</div><div><b>ATENCIÓN A CLIENTES:</b> 01 81 8329-9252</div><div><b>www.soriana.com/condiciones</b></div><div>Las restricciones sobre promociones y términos aplicables.</div></section>${cashier}<section class="mobile">Con Soriana Móvil obtén megas GRATIS y el DOBLE DE TIEMPO AIRE en tus recargas con puntos Soriana. Conoce más en <b>www.sorianamovil.com</b></section><div class="brand-footer">MARCA SORIANA: CALIDAD AL MEJOR PRECIO</div><div class="version">Versión: ${escapeHtml(d.receiptVersion)}</div><div class="barcode">${itfBarcodeSvg(t.ticketNumber)}</div><div class="digits">${escapeHtml(t.ticketNumber)}</div></main></body></html>`;}
+function receiptPrintTotalRows(t){return receiptTotalRows(t,'total-row');}
+function wrapWords(s,max){const words=String(s??'').split(/\s+/);const out=[];let line='';for(const w of words){if(!w)continue;if(!line)line=w;else if((line+' '+w).length<=max)line+=' '+w;else{out.push(line);line=w;}}if(line)out.push(line);return out.length?out:[''];}
+const CP1252={'€':0x80,'‚':0x82,'ƒ':0x83,'„':0x84,'…':0x85,'†':0x86,'‡':0x87,'ˆ':0x88,'‰':0x89,'Š':0x8a,'‹':0x8b,'Œ':0x8c,'Ž':0x8e,'‘':0x91,'’':0x92,'“':0x93,'”':0x94,'•':0x95,'–':0x96,'—':0x97,'˜':0x98,'™':0x99,'š':0x9a,'›':0x9b,'œ':0x9c,'ž':0x9e,'Ÿ':0x9f};
+function cpByte(ch){if(CP1252[ch]!==undefined)return CP1252[ch];const code=ch.codePointAt(0);if(code<=255)return code;const repl=ch.normalize('NFKD').replace(/[\u0300-\u036f]/g,'');if(repl&&repl!==ch)return cpByte(repl[0]);return 63;}
+function hexText(s){let h='';for(const ch of String(s??''))h+=cpByte(ch).toString(16).padStart(2,'0');return `<${h.toUpperCase()}>`;}
+async function createReceiptPdf(t){
+ // El PDF se genera desde el mismo DOM y CSS que dibujan la vista previa.
+ // Así se elimina la segunda plantilla vectorial que antes producía diferencias.
+ const stage=document.createElement('div');
+ stage.setAttribute('aria-hidden','true');
+ stage.style.cssText='position:fixed;left:-10000px;top:0;width:80mm;margin:0;padding:0;background:#fff;z-index:-1;display:block;visibility:visible;';
+ const receipt=receiptElement(t);
+ const receiptLogo=receipt.querySelector('.soriana-logo');
+ if(receiptLogo)receiptLogo.setAttribute('xmlns','http://www.w3.org/2000/svg');
+ receipt.style.margin='0';
+ stage.appendChild(receipt);
+ document.body.appendChild(stage);
+ try{
+   if(document.fonts?.ready) await document.fonts.ready;
+   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+   const rect=receipt.getBoundingClientRect();
+   const cssWidth=Math.ceil(rect.width);
+   const cssHeight=Math.ceil(rect.height);
+   if(!cssWidth||!cssHeight)throw new Error('No fue posible medir el ticket para generar el PDF.');
+   const css=[...document.querySelectorAll('style')].map(node=>node.textContent||'').join('\n');
+   const xhtml=`<html xmlns="http://www.w3.org/1999/xhtml"><head><meta charset="UTF-8"/><style>${css}\nhtml,body{margin:0!important;padding:0!important;width:80mm!important;background:#fff!important;}body{overflow:visible!important;} .soriana-receipt{margin:0!important;max-width:none!important;}</style></head><body>${receipt.outerHTML}</body></html>`;
+   const svg=`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xhtml="http://www.w3.org/1999/xhtml" width="${cssWidth}" height="${cssHeight}" viewBox="0 0 ${cssWidth} ${cssHeight}"><foreignObject x="0" y="0" width="${cssWidth}" height="${cssHeight}">${xhtml}</foreignObject></svg>`;
+   const svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+   const image=new Image();
+   image.decoding='sync';
+   await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error('El navegador no pudo renderizar la plantilla del ticket para PDF.'));image.src=svgUrl;});
+   const scale=3;
+   const canvas=document.createElement('canvas');
+   canvas.width=cssWidth*scale;canvas.height=cssHeight*scale;
+   const ctx=canvas.getContext('2d',{alpha:false});
+   if(!ctx)throw new Error('No está disponible Canvas para generar el PDF.');
+   ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+   ctx.drawImage(image,0,0,canvas.width,canvas.height);
+   const jpegBlob=await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('No fue posible codificar el ticket como imagen PDF.')),'image/jpeg',0.97));
+   const jpeg=new Uint8Array(await jpegBlob.arrayBuffer());
+   const pageW=cssWidth*0.75,pageH=cssHeight*0.75;
+   const enc=new TextEncoder();
+   const chunks=[];let offset=0;const offsets=[0];
+   const push=(bytes)=>{chunks.push(bytes);offset+=bytes.length;};
+   const object=(n,parts)=>{offsets[n]=offset;for(const part of parts)push(typeof part==='string'?enc.encode(part):part);};
+   push(enc.encode('%PDF-1.4\n%SORI-TICKET-RASTER\n'));
+   object(1,['1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n']);
+   object(2,['2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n']);
+   object(3,[`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW.toFixed(2)} ${pageH.toFixed(2)}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`]);
+   object(4,[`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`,jpeg,'\nendstream\nendobj\n']);
+   const content=`q\n${pageW.toFixed(3)} 0 0 ${pageH.toFixed(3)} 0 0 cm\n/Im0 Do\nQ\n`;
+   object(5,[`5 0 obj\n<< /Length ${enc.encode(content).length} >>\nstream\n${content}endstream\nendobj\n`]);
+   const xref=offset;let table='xref\n0 6\n0000000000 65535 f \n';
+   for(let i=1;i<=5;i++)table+=`${String(offsets[i]).padStart(10,'0')} 00000 n \n`;
+   table+=`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+   push(enc.encode(table));
+   return new Blob(chunks,{type:'application/pdf'});
+ }finally{stage.remove();}
+}
+
+async function downloadReceiptPdf(t,name){try{setNotice('Generando PDF con el mismo diseño de la vista previa…','info');const blob=await createReceiptPdf(t);exportBlob(blob,name);setNotice('PDF generado con el diseño de la vista previa.','success');}catch(error){console.error(error);setNotice(`No fue posible generar el PDF: ${error.message}`,'warning');}}
+function safeName(v){return String(v??'ticket').replace(/[^a-z0-9_-]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,80)||'ticket';}
+function u16(n){return [n&255,(n>>>8)&255];}function u32(n){return [n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255];}
+let crcTable=null;function crc32(data){if(!crcTable){crcTable=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);crcTable[n]=c>>>0;}}let c=0xffffffff;for(const b of data)c=crcTable[(c^b)&255]^(c>>>8);return (c^0xffffffff)>>>0;}
+function dosDateTime(date=new Date()){const year=Math.max(1980,date.getFullYear());return {time:(date.getHours()<<11)|(date.getMinutes()<<5)|Math.floor(date.getSeconds()/2),date:((year-1980)<<9)|((date.getMonth()+1)<<5)|date.getDate()};}
+function zipStore(files){const enc=new TextEncoder();const local=[],central=[];let offset=0;const dt=dosDateTime();for(const file of files){const name=enc.encode(file.name);const data=file.data;const crc=crc32(data);const header=new Uint8Array(30+name.length);let p=0;header.set(u32(0x04034b50),p);p+=4;header.set(u16(20),p);p+=2;header.set(u16(0x0800),p);p+=2;header.set(u16(0),p);p+=2;header.set(u16(dt.time),p);p+=2;header.set(u16(dt.date),p);p+=2;header.set(u32(crc),p);p+=4;header.set(u32(data.length),p);p+=4;header.set(u32(data.length),p);p+=4;header.set(u16(name.length),p);p+=2;header.set(u16(0),p);p+=2;header.set(name,p);local.push(header,data);
+const c=new Uint8Array(46+name.length);p=0;c.set(u32(0x02014b50),p);p+=4;c.set(u16(20),p);p+=2;c.set(u16(20),p);p+=2;c.set(u16(0x0800),p);p+=2;c.set(u16(0),p);p+=2;c.set(u16(dt.time),p);p+=2;c.set(u16(dt.date),p);p+=2;c.set(u32(crc),p);p+=4;c.set(u32(data.length),p);p+=4;c.set(u32(data.length),p);p+=4;c.set(u16(name.length),p);p+=2;c.set(u16(0),p);p+=2;c.set(u16(0),p);p+=2;c.set(u16(0),p);p+=2;c.set(u16(0),p);p+=2;c.set(u32(0),p);p+=4;c.set(u32(offset),p);p+=4;c.set(name,p);central.push(c);offset+=header.length+data.length;}
+const centralSize=central.reduce((s,a)=>s+a.length,0);const end=new Uint8Array(22);let p=0;end.set(u32(0x06054b50),p);p+=4;end.set(u16(0),p);p+=2;end.set(u16(0),p);p+=2;end.set(u16(files.length),p);p+=2;end.set(u16(files.length),p);p+=2;end.set(u32(centralSize),p);p+=4;end.set(u32(offset),p);p+=4;end.set(u16(0),p);return new Blob([...local,...central,end],{type:'application/zip'});}
+function exportBlob(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.style.display='none';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2500);}
+function archivePayload(arr){return {schema:'soriticket.archive',schemaVersion:1,application:{name:'SORITICKET Visor Digital',version:APP_VERSION},exportedAt:new Date().toISOString(),tickets:arr.map(t=>({...t,items:t.items.map(i=>({...i}))}))};}
+function exportJson(arr,name){exportBlob(new Blob([JSON.stringify(archivePayload(arr),null,2)],{type:'application/json;charset=utf-8'}),name);}
+async function exportZip(){const arr=filtered();if(!arr.length)return;const zipFiles=[];const manifest={schema:'soriticket.pdf-bundle',schemaVersion:1,createdAt:new Date().toISOString(),filter:currentFilters(),count:arr.length,tickets:[]};setNotice(`Preparando ${arr.length} PDF(s) del resultado filtrado…`,'info');$('exportZipAll').disabled=true;$('exportZipFiltered').disabled=true;try{for(let i=0;i<arr.length;i++){const t=arr[i];const blob=await createReceiptPdf(t);const data=new Uint8Array(await blob.arrayBuffer());const name=`tickets/${safeName(t.ticketNumber)}${t.series?`_${safeName(t.series)}`:''}.pdf`;zipFiles.push({name,data});manifest.tickets.push({ticketNumber:t.ticketNumber,series:t.series,branch:t.branch,purchaseDate:t.purchaseDate,pdf:name});if((i+1)%20===0){setNotice(`Generando ZIP: ${i+1} de ${arr.length} PDF(s)…`);await new Promise(resolve=>setTimeout(resolve,0));}}zipFiles.push({name:'manifest.json',data:new TextEncoder().encode(JSON.stringify(manifest,null,2))});const blob=zipStore(zipFiles);exportBlob(blob,`soriticket_tickets_${new Date().toISOString().slice(0,10)}.zip`);setNotice(`ZIP generado correctamente: ${arr.length} PDF(s) completos y manifest.json.`, 'success');}catch(error){console.error(error);setNotice(`No fue posible generar el ZIP: ${error.message}`,'warning');}finally{$('exportZipAll').disabled=!filtered().length;$('exportZipFiltered').disabled=!filtered().length;}}
+$('jsonFiles').addEventListener('change',e=>{importFiles([...e.target.files||[]]);e.target.value='';});$('exportJsonAll').addEventListener('click',()=>exportJson(tickets,`soriticket_archivo_${new Date().toISOString().slice(0,10)}.json`));$('exportZipAll').addEventListener('click',exportZip);$('exportZipFiltered').addEventListener('click',exportZip);$('resetFilters').addEventListener('click',()=>{['searchText','dateFrom','dateTo'].forEach(id=>$(id).value='');$('branchFilter').value='';$('departmentFilter').value='';$('statusFilter').value='';$('sortOrder').value='newest';render();});
+['searchText','branchFilter','dateFrom','dateTo','departmentFilter','statusFilter','sortOrder'].forEach(id=>$(id).addEventListener(id==='searchText'?'input':'change',render));$('ticketGrid').addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const id=b.dataset.id;const t=tickets.find(x=>x.id===id);if(!t)return;if(b.dataset.action==='view')openTicket(id);if(b.dataset.action==='pdf')downloadReceiptPdf(t,`ticket_${safeName(t.ticketNumber)}.pdf`);if(b.dataset.action==='print')printTicket(id);});$('closeModal').addEventListener('click',closeModal);$('ticketModal').addEventListener('click',e=>{if(e.target===$('ticketModal'))closeModal();});$('editBranch').addEventListener('change',updateTicketMeta);$('editPurchaseDate').addEventListener('change',updateTicketMeta);$('editPurchaseTime').addEventListener('change',updateTicketMeta);$('modalPdf').addEventListener('click',()=>{const t=tickets.find(x=>x.id===activeTicketId);if(t)downloadReceiptPdf(t,`ticket_${safeName(t.ticketNumber)}.pdf`);});$('modalPrint').addEventListener('click',()=>{if(activeTicketId)printTicket(activeTicketId);});$('modalJson').addEventListener('click',()=>{const t=tickets.find(x=>x.id===activeTicketId);if(t)exportJson([t],`ticket_${safeName(t.ticketNumber)}.json`);});
+loadLocal();refreshFilters();render();
+window.SORITICKET_VIEWER_TEST={classify,createReceiptPdf,downloadReceiptPdf,zipStore,normalizeTicket,normalizeItem,stripProductFieldLabel,parseLabeledProductLine,filtered,resolveBranch,branchDisplayLabel,createCard,receiptInfo,receiptPrintHtml,receiptElement,receiptSubtotalRowsData,receiptTotalRows,BRANCH_CATALOG};
+})();
+</script>
+</body>
+</html>
