@@ -1,0 +1,2009 @@
+// ==UserScript==
+// @name         SORIFACT Batch - Soriana
+// @namespace    https://www.soriana.com/
+// @version      2.8.13
+// @description  Procesa lotes grandes por bloques; reintenta el mismo ticket si el formulario tarda y cuenta cada clic de emisión una sola vez.
+// @author       OpenAI
+// @match        https://www.soriana.com/facturacion*
+// @run-at       document-idle
+// @grant        none
+// ==/UserScript==
+
+(() => {
+  'use strict';
+
+  // ---------------------------------------------------------------------------
+  // Configuración conservadora. No usa endpoints privados ni omite controles
+  // del portal: interactúa con los formularios y botones visibles de Soriana.
+  // ---------------------------------------------------------------------------
+  const CONFIG = Object.freeze({
+    storageKey: 'sorifact.batch.v8',
+    legacyStorageKeys: ['sorifact.batch.v7', 'sorifact.batch.v6', 'sorifact.batch.v5', 'sorifact.batch.v4'],
+    pollMs: 300,
+    ticketTimeoutMs: 45000,
+    previewTimeoutMs: 45000,
+    emissionResultTimeoutMs: 45000, // Se conserva el parámetro legado; el avance ya no depende del mensaje de Soriana.
+    postEmissionMinWaitMs: 1200,
+    postEmissionQuietMs: 400,
+    postEmissionMaxWaitMs: 10000,
+    recordChunkSize: 100,
+    formRecoveryTimeoutMs: 2000, // Reintenta activar/recuperar el formulario cada 2 segundos; nunca descarta el ticket.
+    ticketFormAppearanceTimeoutMs: 2000, // Comprobación inicial de 2 segundos; si no aparece, se reintenta el mismo ticket.
+    formRetryNoticeMs: 5000,
+    maxTicketLength: 20,
+    version: 8,
+    cfdiCode: 'G03',
+    cfdiLabel: 'Gastos en general',
+    csvStartRowIndex: 8,
+    csvStartColumnIndex: 1
+  });
+
+  const STATUS = Object.freeze({
+    pending: 'Pendiente',
+    success: 'Factura emitida',
+    already_invoiced: 'Ya facturado',
+    not_found: 'Ticket sin información',
+    service_unavailable: 'Servicio no disponible',
+    emission_error: 'Error de emisión',
+    invalid_format: 'Formato inválido',
+    duplicate: 'Duplicado en CSV',
+    needs_review: 'Revisión necesaria',
+    auto_skipped: 'Omitido automáticamente',
+    manual_skip: 'Omitido manualmente'
+  });
+
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+
+  // Seguimiento pasivo de solicitudes del portal. Solo espera solicitudes
+  // que comenzaron después del clic de emisión. Ignora respuestas tardías de
+  // solicitudes previas y no depende del mensaje visual de éxito.
+  const portalNetworkMonitor = (() => {
+    let sequence = 0;
+    const pending = new Map();
+    let activityEvents = [];
+
+    const noteActivity = id => {
+      activityEvents.push({ id, at: performance.now() });
+      // Protección de memoria ante portales con tráfico excesivo.
+      if (activityEvents.length > 2048) activityEvents.splice(0, activityEvents.length - 2048);
+    };
+
+    const begin = () => {
+      const id = ++sequence;
+      pending.set(id, performance.now());
+      noteActivity(id);
+      return id;
+    };
+    const end = id => {
+      if (!pending.has(id)) return;
+      pending.delete(id);
+      noteActivity(id);
+    };
+
+    function install() {
+      try {
+        const proto = window.XMLHttpRequest?.prototype;
+        const nativeSend = proto?.send;
+        if (proto && typeof nativeSend === 'function' && !nativeSend.__sorifactTracked) {
+          const wrappedSend = function (...args) {
+            const id = begin();
+            let finished = false;
+            const finish = () => {
+              if (finished) return;
+              finished = true;
+              end(id);
+            };
+            this.addEventListener('loadend', finish, { once: true });
+            try {
+              return nativeSend.apply(this, args);
+            } catch (error) {
+              finish();
+              throw error;
+            }
+          };
+          Object.defineProperty(wrappedSend, '__sorifactTracked', { value: true });
+          proto.send = wrappedSend;
+        }
+      } catch (error) {
+        console.warn('[SORIFACT] No se pudo instalar el seguimiento XHR:', error);
+      }
+
+      try {
+        const nativeFetch = window.fetch;
+        if (typeof nativeFetch === 'function' && !nativeFetch.__sorifactTracked) {
+          const wrappedFetch = function (...args) {
+            const id = begin();
+            let request;
+            try {
+              request = nativeFetch.apply(this, args);
+            } catch (error) {
+              end(id);
+              throw error;
+            }
+            return request.then(
+              response => { end(id); return response; },
+              error => { end(id); throw error; }
+            );
+          };
+          Object.defineProperty(wrappedFetch, '__sorifactTracked', { value: true });
+          window.fetch = wrappedFetch;
+        }
+      } catch (error) {
+        console.warn('[SORIFACT] No se pudo instalar el seguimiento fetch:', error);
+      }
+    }
+
+    const mark = () => sequence;
+
+    async function waitUntilQuiet(marker, options = {}) {
+      const minMs = Math.max(0, Number(options.minMs ?? 900));
+      const quietMs = Math.max(0, Number(options.quietMs ?? 350));
+      const maxMs = Math.max(minMs, Number(options.maxMs ?? 10000));
+      const startedAt = performance.now();
+      let timedOut = false;
+      let pendingCount = 0;
+
+      while (true) {
+        const now = performance.now();
+        const elapsedMs = now - startedAt;
+        pendingCount = 0;
+        for (const id of pending.keys()) {
+          if (id > marker) pendingCount += 1;
+        }
+
+        let lastRelevantActivityAt = startedAt;
+        for (let i = 0; i < activityEvents.length; i += 1) {
+          const event = activityEvents[i];
+          if (event.id > marker && event.at > lastRelevantActivityAt) {
+            lastRelevantActivityAt = event.at;
+          }
+        }
+
+        const quietForMs = now - lastRelevantActivityAt;
+        if (elapsedMs >= minMs && pendingCount === 0 && quietForMs >= quietMs) break;
+        if (elapsedMs >= maxMs) {
+          timedOut = pendingCount > 0;
+          break;
+        }
+        await sleep(50);
+      }
+
+      const result = {
+        elapsedMs: Number((performance.now() - startedAt).toFixed(3)),
+        timedOut,
+        pendingCount
+      };
+      // Los eventos ya considerados pertenecen a este intento. Las solicitudes
+      // que sigan activas quedan en pending; su ID será anterior al próximo mark.
+      activityEvents = activityEvents.filter(event => event.id > sequence);
+      return result;
+    }
+
+    install();
+    return { mark, waitUntilQuiet };
+  })();
+  const nowIso = () => new Date().toISOString();
+
+  // performance.timeOrigin + performance.now() conserva precisión submilisegundo.
+  // Se serializa como ISO UTC con seis decimales: milisegundos + microsegundos.
+  function preciseTimestamp() {
+    const monotonicMs = performance.now();
+    const epochMs = performance.timeOrigin + monotonicMs;
+    const wholeMs = Math.floor(epochMs);
+    const microRemainder = Math.max(0, Math.min(999, Math.floor((epochMs - wholeMs) * 1000)));
+    const base = new Date(wholeMs).toISOString();
+    const iso = base.replace(/\.(\d{3})Z$/, (_, millis) =>
+      `.${millis}${String(microRemainder).padStart(3, '0')}Z`
+    );
+    return { iso, monotonicMs };
+  }
+
+  const nowIsoMicroseconds = () => preciseTimestamp().iso;
+
+  function formatDurationMs(value) {
+    const ms = Number(value);
+    if (!Number.isFinite(ms) || ms < 0) return '';
+    if (ms < 1000) return `${ms.toFixed(3)} ms`;
+    return `${(ms / 1000).toFixed(3)} s`;
+  }
+
+  function formatLocalPreciseTimestamp(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    const fraction = String(value).match(/\.(\d{3})(\d{3})Z$/);
+    const micros = fraction ? `${fraction[1]}${fraction[2]}` : '000000';
+    return `${date.toLocaleDateString('es-MX')} ${date.toLocaleTimeString('es-MX', { hour12: false })}.${micros}`;
+  }
+  const normalize = value => String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Bloquea salidas del flujo de facturación: ningún enlace o formulario
+  // puede llevar al usuario a otro dominio o a una sección ajena a facturación.
+  // Los cambios de pestaña internos (hash/data-toggle) y descargas blob/data
+  // permanecen permitidos. La recuperación siempre activa Factura tu Compra.
+  function isAllowedBillingNavigation(rawUrl) {
+    if (!rawUrl) return true;
+    const raw = String(rawUrl).trim();
+    if (!raw || raw.startsWith('#') || /^(javascript:|blob:|data:|mailto:|tel:)/i.test(raw)) return true;
+    try {
+      const target = new URL(raw, window.location.href);
+      return target.origin === window.location.origin && /^\/facturacion(?:\/|$)/i.test(target.pathname);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  document.addEventListener('click', event => {
+    const anchor = event.target?.closest?.('a[href]');
+    if (!anchor || isAllowedBillingNavigation(anchor.getAttribute('href'))) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    setTimeout(() => activateFacturarCompraTab(), 0);
+    console.warn('[SORIFACT] Navegación fuera de Facturación Soriana bloqueada:', anchor.href);
+  }, true);
+
+  document.addEventListener('submit', event => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    const action = form.getAttribute('action') || window.location.href;
+    if (isAllowedBillingNavigation(action)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    activateFacturarCompraTab();
+    console.warn('[SORIFACT] Envío de formulario fuera de Facturación Soriana bloqueado:', action);
+  }, true);
+
+  // Elimina redirecciones HTML automáticas declaradas mediante meta refresh.
+  document.querySelectorAll('meta[http-equiv]').forEach(meta => {
+    if (/^refresh$/i.test(meta.getAttribute('http-equiv') || '')) meta.remove();
+  });
+
+  // El lote se conserva en memoria, pero los registros se persisten por bloques.
+  // Así, actualizar un ticket no obliga a serializar los 6,000 registros.
+  const RECORD_CHUNK_SIZE = CONFIG.recordChunkSize;
+  let stateCache;
+  let stateCacheLoaded = false;
+  let stateStorage = null;
+  let persistedChunkCount = 0;
+  const trackedArrays = new WeakMap();
+  const dirtyChunksByState = new WeakMap();
+  const fullDirtyStates = new WeakSet();
+  const recordIndexesByState = new WeakMap();
+
+  const SKIPPED_STATUSES = new Set([
+    'already_invoiced', 'not_found', 'service_unavailable', 'duplicate',
+    'invalid_format', 'manual_skip', 'auto_skipped'
+  ]);
+  const REVIEW_STATUSES = new Set(['needs_review', 'emission_error']);
+
+  function calculateStats(records) {
+    const stats = {
+      total: records.length, pending: 0, success: 0, emitted: 0, skipped: 0,
+      review: 0, needsReview: 0, completed: 0
+    };
+    for (const record of records) {
+      const status = record?.status;
+      if (status === 'pending') stats.pending += 1;
+      else stats.completed += 1;
+      if (status === 'success') stats.success += 1;
+      if (record?.emissionInvokedAt || record?.emissionClickedAt || status === 'success') stats.emitted += 1;
+      if (SKIPPED_STATUSES.has(status)) stats.skipped += 1;
+      else if (REVIEW_STATUSES.has(status)) stats.review += 1;
+      if (status === 'needs_review') stats.needsReview += 1;
+    }
+    return stats;
+  }
+
+  function updateStatsForStatus(state, record, oldStatus, newStatus) {
+    if (oldStatus === newStatus || !state.stats) return;
+    const stats = state.stats;
+    const hadEmission = Boolean(record?.emissionInvokedAt || record?.emissionClickedAt || oldStatus === 'success');
+    const hasEmission = Boolean(record?.emissionInvokedAt || record?.emissionClickedAt || newStatus === 'success');
+    if (hadEmission !== hasEmission) stats.emitted = Math.max(0, stats.emitted + (hasEmission ? 1 : -1));
+    if (oldStatus === 'pending') stats.pending = Math.max(0, stats.pending - 1);
+    else stats.completed = Math.max(0, stats.completed - 1);
+    if (newStatus === 'pending') stats.pending += 1;
+    else stats.completed += 1;
+
+    if (oldStatus === 'success') stats.success = Math.max(0, stats.success - 1);
+    else if (SKIPPED_STATUSES.has(oldStatus)) stats.skipped = Math.max(0, stats.skipped - 1);
+    else if (REVIEW_STATUSES.has(oldStatus)) stats.review = Math.max(0, stats.review - 1);
+    if (oldStatus === 'needs_review') stats.needsReview = Math.max(0, stats.needsReview - 1);
+
+    if (newStatus === 'success') stats.success += 1;
+    else if (SKIPPED_STATUSES.has(newStatus)) stats.skipped += 1;
+    else if (REVIEW_STATUSES.has(newStatus)) stats.review += 1;
+    if (newStatus === 'needs_review') stats.needsReview += 1;
+  }
+
+  function attachRecordTracking(state, alreadyChunked = false) {
+    if (!state || !Array.isArray(state.records)) return;
+    if (trackedArrays.get(state) === state.records) return;
+
+    const rawRecords = state.records;
+    state.stats = calculateStats(rawRecords);
+    const dirtyChunks = new Set();
+    const byTicket = new Map();
+    const byRecord = new WeakMap();
+    const trackedRecords = rawRecords.map((record, index) => {
+      const safeRecord = record && typeof record === 'object' ? record : {};
+      const ticket = String(safeRecord.ticket ?? '');
+      if (!byTicket.has(ticket)) byTicket.set(ticket, []);
+      byTicket.get(ticket).push(index);
+      const proxy = new Proxy(safeRecord, {
+        set(target, property, value) {
+          if (property === 'status') updateStatsForStatus(state, target, target.status, value);
+          const isEmissionMarker = property === 'emissionInvokedAt' || property === 'emissionClickedAt';
+          const hadEmission = isEmissionMarker && Boolean(target.emissionInvokedAt || target.emissionClickedAt || target.status === 'success');
+          const saved = Reflect.set(target, property, value);
+          if (saved && isEmissionMarker && !hadEmission && (target.emissionInvokedAt || target.emissionClickedAt)) {
+            state.stats.emitted += 1;
+          }
+          if (saved) dirtyChunks.add(Math.floor(index / RECORD_CHUNK_SIZE));
+          return saved;
+        },
+        deleteProperty(target, property) {
+          const deleted = Reflect.deleteProperty(target, property);
+          if (deleted) dirtyChunks.add(Math.floor(index / RECORD_CHUNK_SIZE));
+          return deleted;
+        }
+      });
+      byRecord.set(proxy, index);
+      return proxy;
+    });
+    state.records = trackedRecords;
+    trackedArrays.set(state, trackedRecords);
+    dirtyChunksByState.set(state, dirtyChunks);
+    recordIndexesByState.set(state, { byTicket, byRecord });
+
+    if (!alreadyChunked) {
+      fullDirtyStates.add(state);
+      const chunkCount = Math.ceil(trackedRecords.length / RECORD_CHUNK_SIZE);
+      for (let index = 0; index < chunkCount; index += 1) dirtyChunks.add(index);
+    }
+  }
+
+  function getRecordIndex(state, record) {
+    const indexes = recordIndexesByState.get(state);
+    return indexes?.byRecord.get(record) ?? -1;
+  }
+
+  function findRecordByTicket(state, ticket, predicate = null) {
+    const positions = recordIndexesByState.get(state)?.byTicket.get(String(ticket)) || [];
+    for (const index of positions) {
+      const record = state.records[index];
+      if (!predicate || predicate(record)) return record;
+    }
+    return null;
+  }
+
+  function metadataForStorage(state) {
+    const metadata = { ...state };
+    delete metadata.records;
+    metadata.recordStorage = 'chunks-v1';
+    metadata.recordCount = state.records.length;
+    metadata.recordChunkCount = Math.ceil(state.records.length / RECORD_CHUNK_SIZE);
+    return metadata;
+  }
+
+  function chunkStorageKey(index) {
+    return `${CONFIG.storageKey}:records:${index}`;
+  }
+
+  function persistChunked(storage, state, dirtyChunks, forceAll) {
+    const chunkCount = Math.ceil(state.records.length / RECORD_CHUNK_SIZE);
+    const indexes = forceAll
+      ? Array.from({ length: chunkCount }, (_, index) => index)
+      : [...dirtyChunks];
+
+    // Primero se escriben los registros modificados; luego el puntero/metadata.
+    // Si ocurre una interrupción entre ambos pasos, el índice antiguo todavía
+    // evita volver a facturar un registro ya marcado como terminado.
+    for (const chunkIndex of indexes) {
+      const start = chunkIndex * RECORD_CHUNK_SIZE;
+      const chunk = state.records.slice(start, Math.min(start + RECORD_CHUNK_SIZE, state.records.length));
+      storage.setItem(chunkStorageKey(chunkIndex), JSON.stringify(chunk));
+    }
+
+    storage.setItem(CONFIG.storageKey, JSON.stringify(metadataForStorage(state)));
+
+    // Los bloques sobrantes se eliminan después de publicar la metadata nueva.
+    if (forceAll && persistedChunkCount > chunkCount) {
+      for (let index = chunkCount; index < persistedChunkCount; index += 1) {
+        storage.removeItem(chunkStorageKey(index));
+      }
+    }
+    return chunkCount;
+  }
+
+  function removeChunkKeys(storage) {
+    const prefix = `${CONFIG.storageKey}:records:`;
+    for (let index = storage.length - 1; index >= 0; index -= 1) {
+      const key = storage.key(index);
+      if (key && key.startsWith(prefix)) storage.removeItem(key);
+    }
+  }
+
+  function readStoredState(storage) {
+    const raw = storage.getItem(CONFIG.storageKey);
+    if (!raw) return null;
+    const state = JSON.parse(raw);
+    if (!state || state.version !== CONFIG.version) return null;
+
+    if (state.recordStorage === 'chunks-v1') {
+      const chunkCount = Number(state.recordChunkCount || 0);
+      const expectedCount = Number(state.recordCount || 0);
+      const records = [];
+      for (let index = 0; index < chunkCount; index += 1) {
+        const chunkRaw = storage.getItem(chunkStorageKey(index));
+        if (!chunkRaw) throw new Error(`Falta el bloque ${index + 1} de ${chunkCount} del lote guardado.`);
+        const chunk = JSON.parse(chunkRaw);
+        if (!Array.isArray(chunk)) throw new Error(`El bloque ${index + 1} del lote está dañado.`);
+        records.push(...chunk);
+      }
+      if (records.length !== expectedCount) throw new Error('El número de registros guardados no coincide con la metadata.');
+      state.records = records;
+      persistedChunkCount = chunkCount;
+    } else if (!Array.isArray(state.records)) {
+      throw new Error('La metadata guardada no contiene registros válidos.');
+    }
+
+    const wasChunked = state.recordStorage === 'chunks-v1';
+    delete state.recordStorage;
+    delete state.recordCount;
+    delete state.recordChunkCount;
+    attachRecordTracking(state, wasChunked);
+    return state;
+  }
+
+  function readState() {
+    if (stateCacheLoaded) return stateCache;
+
+    try {
+      const persistentState = readStoredState(localStorage);
+      if (persistentState) {
+        stateStorage = localStorage;
+        stateCache = persistentState;
+        stateCacheLoaded = true;
+        return stateCache;
+      }
+    } catch (error) {
+      console.warn('[SORIFACT] No se pudo leer el lote persistente; se intentará el respaldo:', error);
+    }
+
+    try {
+      const sessionState = readStoredState(sessionStorage);
+      if (sessionState) {
+        stateStorage = sessionStorage;
+        stateCache = sessionState;
+        stateCacheLoaded = true;
+        return stateCache;
+      }
+    } catch (error) {
+      console.warn('[SORIFACT] No se pudo leer el lote de sesión:', error);
+    }
+
+    // Migración transparente de versiones anteriores (incluida 2.8.8/v7).
+    for (const legacyKey of CONFIG.legacyStorageKeys) {
+      for (const storage of [localStorage, sessionStorage]) {
+        try {
+          const legacyRaw = storage.getItem(legacyKey);
+          if (!legacyRaw) continue;
+          const legacyState = JSON.parse(legacyRaw);
+          if (!legacyState || !Array.isArray(legacyState.records)) continue;
+          if (![4, 5, 6, 7].includes(legacyState.version)) continue;
+
+          const priorIndex = Number(legacyState.nextIndex || 0) - 1;
+          const priorRecord = legacyState.records[priorIndex];
+          const message = String(legacyState.lastMessage || '');
+          if (legacyState.phase === 'navigating' && priorRecord &&
+              priorRecord.status === 'pending' && /Factura emitida/i.test(message) &&
+              message.includes(priorRecord.ticket)) {
+            priorRecord.status = 'success';
+            priorRecord.completedAt = priorRecord.completedAt || nowIso();
+            priorRecord.detail = 'Recuperado al actualizar: la versión anterior ya había ejecutado el botón Generar factura del modal.';
+          }
+
+          legacyState.version = CONFIG.version;
+          legacyState.g03Authorized = Boolean(legacyState.g03Authorized);
+          stateCacheLoaded = false;
+          stateCache = null;
+          stateStorage = storage;
+          const saved = writeState(legacyState);
+          if (saved) {
+            for (const oldStorage of [localStorage, sessionStorage]) {
+              try { oldStorage.removeItem(legacyKey); } catch (_) {}
+            }
+            console.info('[SORIFACT] Lote anterior migrado a almacenamiento por bloques:', legacyKey);
+          }
+          return legacyState;
+        } catch (error) {
+          console.warn('[SORIFACT] No se pudo migrar estado anterior:', legacyKey, error);
+        }
+      }
+    }
+
+    stateCache = null;
+    stateCacheLoaded = true;
+    stateStorage = null;
+    persistedChunkCount = 0;
+    return null;
+  }
+
+  function writeState(state) {
+    try {
+      attachRecordTracking(state, false);
+      const dirtyChunks = dirtyChunksByState.get(state) || new Set();
+      const forceAll = fullDirtyStates.has(state);
+      const preferredStorage = stateStorage || localStorage;
+      const chunkCount = persistChunked(preferredStorage, state, dirtyChunks, forceAll);
+      stateStorage = preferredStorage;
+      persistedChunkCount = chunkCount;
+      dirtyChunks.clear();
+      fullDirtyStates.delete(state);
+      stateCache = state;
+      stateCacheLoaded = true;
+      return true;
+    } catch (persistentError) {
+      if (stateStorage !== sessionStorage) {
+        console.warn('[SORIFACT] No se pudo guardar en almacenamiento persistente; intentando respaldo de sesión:', persistentError);
+        try {
+          // El respaldo de sesión recibe todos los bloques para no depender de
+          // escrituras previas que quizá solo existan en localStorage.
+          const allChunks = new Set();
+          const count = Math.ceil((state.records || []).length / RECORD_CHUNK_SIZE);
+          for (let index = 0; index < count; index += 1) allChunks.add(index);
+          const sessionChunkCount = persistChunked(sessionStorage, state, allChunks, true);
+          try {
+            localStorage.removeItem(CONFIG.storageKey);
+            removeChunkKeys(localStorage);
+          } catch (_) {}
+          stateStorage = sessionStorage;
+          persistedChunkCount = sessionChunkCount;
+          dirtyChunksByState.get(state)?.clear();
+          fullDirtyStates.delete(state);
+          stateCache = state;
+          stateCacheLoaded = true;
+          setStatus('El lote quedó guardado solo durante esta sesión; el navegador bloqueó el almacenamiento persistente.');
+          return true;
+        } catch (sessionError) {
+          console.error('[SORIFACT] No se pudo guardar el estado:', sessionError);
+          setStatus('No se pudo guardar el lote. El proceso se detendrá para evitar perder o duplicar tickets.');
+          return false;
+        }
+      }
+      console.error('[SORIFACT] No se pudo guardar el estado:', persistentError);
+      setStatus('No se pudo guardar el lote. El proceso se detendrá para evitar perder o duplicar tickets.');
+      return false;
+    }
+  }
+
+  function isVisible(element) {
+    if (!element || !element.isConnected || element.hidden) return false;
+    const style = window.getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    if (element.classList.contains('d-none')) return false;
+    return element.getClientRects().length > 0 || element.classList.contains('show');
+  }
+
+  function visibleText(element) {
+    return isVisible(element) ? (element.innerText || element.textContent || '').trim() : '';
+  }
+
+  function getFormElements() {
+    return {
+      form: document.querySelector('#billing-form'),
+      input: document.querySelector('#billing-ticket-number'),
+      previewButton: document.querySelector('#previzualizar-factura'),
+      previewModal: document.querySelector('#factura-modal'),
+      emitButton: document.querySelector('#emitir-factura'),
+      success: document.querySelector('.billing-generated-success'),
+      emissionError: document.querySelector('.billing-generated-error')
+    };
+  }
+
+  function getVisibleErrorText() {
+    const candidates = [
+      document.querySelector('#service-error-message'),
+      ...document.querySelectorAll('#billing-form .invalid-feedback, #billing-form .form-group')
+    ];
+    return candidates
+      .filter(isVisible)
+      .map(el => (el.innerText || el.textContent || '').trim())
+      .filter(Boolean)
+      .join(' | ');
+  }
+
+  function detectPortalOutcome() {
+    const already = document.querySelector('#ticket-facturado-modal');
+    if (isVisible(already)) {
+      return { kind: 'terminal', status: 'already_invoiced', detail: 'Soriana indica que el ticket ya fue facturado.' };
+    }
+
+    const serviceModal = document.querySelector('#error-servicio-modal');
+    const errors = normalize(getVisibleErrorText());
+    if (isVisible(serviceModal) || /servicio no disponible|no estan disponibles los servicios de facturacion/.test(errors)) {
+      return { kind: 'terminal', status: 'service_unavailable', detail: 'El portal informa que el servicio de facturación no está disponible.' };
+    }
+
+    const success = document.querySelector('.billing-generated-success');
+    const successText = normalize(visibleText(success));
+    if (isVisible(success) && /factura se genero correctamente/.test(successText)) {
+      return { kind: 'terminal', status: 'success', detail: 'El portal confirmó que la factura se generó correctamente.' };
+    }
+
+    const emissionError = document.querySelector('.billing-generated-error');
+    if (isVisible(emissionError)) {
+      const message = visibleText(emissionError) || 'Soriana mostró un error al generar la factura.';
+      return { kind: 'terminal', status: 'emission_error', detail: message.slice(0, 500) };
+    }
+
+    const allErrors = normalize(errors + ' ' + visibleText(document.querySelector('#billing-form')));
+    const notFoundPatterns = [
+      /no se encontro (?:informacion|información)?\s*(?:del|para el)?\s*ticket/,
+      /ticket.{0,45}(?:no existe|no encontrado|no fue encontrado|sin informacion|sin datos)/,
+      /(?:no existe|no encontramos|no se localizo).{0,45}ticket/,
+      /informacion del ticket.{0,35}(?:no disponible|no encontrada)/,
+      /ticket invalido/,
+      /ticket no valido/
+    ];
+    if (errors && notFoundPatterns.some(pattern => pattern.test(allErrors))) {
+      return { kind: 'terminal', status: 'not_found', detail: errors.slice(0, 500) };
+    }
+
+    return { kind: 'none' };
+  }
+
+  function parseDelimited(text, delimiter) {
+    const rows = [];
+    let row = [];
+    let field = '';
+    let quoted = false;
+
+    for (let i = 0; i < text.length; i += 1) {
+      const char = text[i];
+      if (quoted) {
+        if (char === '"' && text[i + 1] === '"') {
+          field += '"';
+          i += 1;
+        } else if (char === '"') {
+          quoted = false;
+        } else {
+          field += char;
+        }
+      } else if (char === '"' && field.length === 0) {
+        quoted = true;
+      } else if (char === delimiter) {
+        row.push(field);
+        field = '';
+      } else if (char === '\n') {
+        row.push(field.replace(/\r$/, ''));
+        // Conserva también las filas vacías para respetar coordenadas como B9.
+        rows.push(row);
+        row = [];
+        field = '';
+      } else {
+        field += char;
+      }
+    }
+
+    row.push(field.replace(/\r$/, ''));
+    if (row.length > 1 || row[0] !== '' || rows.length === 0) rows.push(row);
+    return rows;
+  }
+
+  function chooseDelimiter(text) {
+    const firstLine = String(text).replace(/^\uFEFF/, '').split(/\r?\n/, 1)[0] || '';
+    const counts = [',', ';', '\t'].map(delimiter => {
+      let quoted = false;
+      let count = 0;
+      for (let i = 0; i < firstLine.length; i += 1) {
+        const char = firstLine[i];
+        if (char === '"') {
+          if (quoted && firstLine[i + 1] === '"') i += 1;
+          else quoted = !quoted;
+        } else if (char === delimiter && !quoted) count += 1;
+      }
+      return { delimiter, count };
+    });
+    counts.sort((a, b) => b.count - a.count);
+    return counts[0].count ? counts[0].delimiter : ',';
+  }
+
+  // Extrae únicamente secuencias completas de exactamente 20 dígitos.
+  // Los límites evitan aceptar por error fragmentos de números de 19 o 21+ dígitos.
+  function extractTicketCodes(value) {
+    const source = String(value ?? '');
+    const pattern = /(?:^|[^0-9])([0-9]{20})(?![0-9])/g;
+    const codes = [];
+    let match;
+    while ((match = pattern.exec(source)) !== null) {
+      codes.push(match[1]);
+    }
+    return codes;
+  }
+
+  function importCsvText(text, fileName) {
+    const cleanText = String(text || '').replace(/^\uFEFF/, '');
+    const delimiter = chooseDelimiter(cleanText);
+    const rows = parseDelimited(cleanText, delimiter);
+    if (!rows.length) throw new Error('El CSV está vacío o no contiene filas legibles.');
+
+    const records = [];
+    const seen = new Map();
+
+    // Coordenadas de Excel/CSV: B9 equivale a fila 9 y columna B.
+    // Se omite todo lo anterior; en la fila 9 se empieza en B y en las
+    // siguientes filas se recorren todas las columnas.
+    for (let rowIndex = CONFIG.csvStartRowIndex; rowIndex < rows.length; rowIndex += 1) {
+      const sourceRow = rowIndex + 1;
+      const startColumn = rowIndex === CONFIG.csvStartRowIndex ? CONFIG.csvStartColumnIndex : 0;
+      const row = rows[rowIndex];
+      const rowCodes = [];
+      for (let columnIndex = startColumn; columnIndex < row.length; columnIndex += 1) {
+        rowCodes.push(...extractTicketCodes(row[columnIndex]));
+      }
+
+      for (const ticket of rowCodes) {
+        const record = {
+          ticket,
+          sourceRow,
+          status: 'pending',
+          detail: `Código de 20 dígitos detectado automáticamente a partir de B9 (fila ${sourceRow}).`,
+          createdAt: nowIsoMicroseconds(),
+          processingStartedAt: '',
+          emissionClickAttemptedAt: '',
+          emissionClickedAt: '',
+          processingDurationMs: '',
+          emissionResponseDurationMs: '',
+          totalProcessingDurationMs: '',
+          completedAt: ''
+        };
+
+        if (seen.has(ticket)) {
+          record.status = 'duplicate';
+          record.detail = `Código repetido; apareció primero en la fila ${seen.get(ticket)}.`;
+        } else {
+          seen.set(ticket, sourceRow);
+        }
+        records.push(record);
+      }
+    }
+
+    if (!records.length) {
+      throw new Error('No se encontraron códigos completos de exactamente 20 dígitos desde la celda B9 en adelante.');
+    }
+    return {
+      version: CONFIG.version,
+      fileName: fileName || 'tickets.csv',
+      importedAt: nowIso(),
+      records,
+      nextIndex: 0,
+      runStatus: 'idle',
+      phase: 'idle',
+      currentTicket: '',
+      lastMessage: 'CSV importado. Revisa los códigos detectados antes de iniciar.'
+    };
+  }
+
+  // ---------------------------- Interfaz del panel ---------------------------
+  if (document.querySelector('#sorifact-v2-panel')) return;
+
+  const panel = document.createElement('aside');
+  panel.id = 'sorifact-v2-panel';
+  panel.innerHTML = `
+    <header class="sf-head">
+      <div><strong>SORIFACT BATCH</strong><small>v2.8.12 · Soriana</small></div>
+      <button type="button" id="sf-collapse" title="Contraer">−</button>
+    </header>
+    <div class="sf-body">
+      <div class="sf-file-row">
+        <label class="sf-file-label" for="sf-file">Cargar CSV</label>
+        <input id="sf-file" type="file" accept=".csv,text/csv,.txt">
+      </div>
+      <div id="sf-file-name" class="sf-muted">Ningún archivo cargado</div>
+      <div class="sf-summary">
+        <div><b id="sf-total">0</b><span>Total</span></div>
+        <div><b id="sf-success">0</b><span>Emitidas</span></div>
+        <div><b id="sf-skipped">0</b><span>Omitidas</span></div>
+        <div><b id="sf-review">0</b><span>Revisión</span></div>
+      </div>
+      <label class="sf-consent"><input type="checkbox" id="sf-consent">
+        AUTORIZO UNA SOLA VEZ: seleccionar G03 – Gastos en general para todos los tickets de este lote y emitirlos automáticamente.
+      </label>
+      <div class="sf-actions">
+        <button type="button" id="sf-start" class="sf-primary">Iniciar lote</button>
+        <button type="button" id="sf-pause">Pausar</button>
+        <button type="button" id="sf-skip">Omitir ticket actual</button>
+        <button type="button" id="sf-export">Exportar resultados CSV</button>
+        <button type="button" id="sf-clear" class="sf-muted-button">Borrar lote</button>
+      </div>
+      <div class="sf-progress"><div id="sf-progress-bar"></div></div>
+      <div id="sf-progress-label" class="sf-muted">0 de 0 procesados</div>
+      <div id="sf-status" role="status" aria-live="polite">Carga un CSV para comenzar.</div>
+      <div id="sf-current" class="sf-current"></div>
+      <details class="sf-details"><summary>Ver resultados</summary><div id="sf-results"></div></details>
+      <div class="sf-footnote">No se guardan contraseñas ni datos fiscales en el script. La lista, autorización G03 y progreso se conservan en el navegador. Ante demoras de carga, el lote conserva el ticket y espera/reintenta activar Factura tu Compra; no lo omite solo porque el formulario tarde en aparecer. Cada clic en Generar factura guarda fecha/hora con seis decimales, tiempo de preparación y tiempo hasta inactividad de red. Los datos permanecen aquí hasta que borres el lote.</div>
+    </div>`;
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #sorifact-v2-panel{position:fixed;z-index:2147483646;right:14px;bottom:14px;width:360px;max-width:calc(100vw - 24px);max-height:calc(100vh - 28px);overflow:auto;background:#fff;color:#202124;border:1px solid #d7dce2;border-radius:13px;box-shadow:0 8px 30px #0003;font:13px/1.4 Arial,sans-serif}
+    #sorifact-v2-panel *{box-sizing:border-box}
+    #sorifact-v2-panel .sf-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;background:#b5122b;color:#fff;padding:12px 14px;border-radius:12px 12px 0 0}
+    #sorifact-v2-panel .sf-head small{display:block;font-size:10px;opacity:.85;margin-top:2px}
+    #sorifact-v2-panel button{font:inherit;cursor:pointer;border:0;border-radius:7px;padding:9px 10px;background:#edf0f3;color:#252525}
+    #sorifact-v2-panel button:disabled{opacity:.45;cursor:not-allowed}
+    #sorifact-v2-panel #sf-collapse{background:transparent;color:#fff;font-size:20px;padding:0 6px}
+    #sorifact-v2-panel .sf-body{padding:12px}
+    #sorifact-v2-panel .sf-file-row{display:flex;align-items:center;gap:8px}
+    #sorifact-v2-panel .sf-file-label{font-weight:700;white-space:nowrap}
+    #sorifact-v2-panel input[type=file]{width:100%;font-size:11px;min-width:0}
+    #sorifact-v2-panel .sf-muted{color:#65717d;font-size:11px;margin-top:5px}
+    #sorifact-v2-panel .sf-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:12px 0}
+    #sorifact-v2-panel .sf-summary>div{background:#f2f4f6;border-radius:8px;padding:8px 4px;text-align:center}
+    #sorifact-v2-panel .sf-summary b{display:block;font-size:20px}
+    #sorifact-v2-panel .sf-summary span{font-size:10px;color:#65717d}
+    #sorifact-v2-panel .sf-summary>div:nth-child(2) b{color:#128344}
+    #sorifact-v2-panel .sf-summary>div:nth-child(3) b{color:#a16a00}
+    #sorifact-v2-panel .sf-summary>div:nth-child(4) b{color:#b42318}
+    #sorifact-v2-panel .sf-consent{display:flex;gap:8px;align-items:flex-start;padding:9px;background:#fff7e6;border:1px solid #f4d99b;border-radius:8px;font-size:11px;margin:8px 0 10px}
+    #sorifact-v2-panel .sf-consent input{margin-top:2px;flex:0 0 auto}
+    #sorifact-v2-panel .sf-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    #sorifact-v2-panel .sf-actions button{min-height:34px}
+    #sorifact-v2-panel .sf-actions .sf-primary{grid-column:1/-1;background:#b5122b;color:#fff;font-weight:700}
+    #sorifact-v2-panel .sf-actions #sf-export{grid-column:1/-1;background:#e8f1fb;color:#174b7a}
+    #sorifact-v2-panel .sf-actions .sf-muted-button{grid-column:1/-1;background:#fff0f0;color:#9c1c1c}
+    #sorifact-v2-panel .sf-progress{height:7px;background:#e9edf1;border-radius:10px;overflow:hidden;margin-top:12px}
+    #sorifact-v2-panel #sf-progress-bar{height:100%;width:0;background:#16834a;transition:width .2s}
+    #sorifact-v2-panel #sf-status{padding:9px 0 5px;font-weight:700;overflow-wrap:anywhere}
+    #sorifact-v2-panel .sf-current{font-size:11px;color:#4e5964;overflow-wrap:anywhere}
+    #sorifact-v2-panel .sf-details{margin-top:9px;border-top:1px solid #e6e9ed;padding-top:8px}
+    #sorifact-v2-panel .sf-details summary{cursor:pointer;font-weight:700}
+    #sorifact-v2-panel #sf-results{max-height:180px;overflow:auto;margin-top:8px}
+    #sorifact-v2-panel .sf-result{padding:6px 2px;border-bottom:1px solid #eef0f2;font-size:11px;overflow-wrap:anywhere}
+    #sorifact-v2-panel .sf-result strong{display:block}
+    #sorifact-v2-panel .sf-footnote{font-size:10px;color:#7b858f;margin-top:10px}
+    #sorifact-v2-panel.sf-collapsed .sf-body{display:none}
+    @media(max-width:480px){#sorifact-v2-panel{right:8px;bottom:8px;width:calc(100vw - 16px);max-width:none;max-height:75vh}}
+  `;
+
+  document.head.appendChild(style);
+  document.body.appendChild(panel);
+
+  const $ = selector => panel.querySelector(selector);
+  let loopActive = false;
+
+  function setStatus(message) {
+    $('#sf-status').textContent = message;
+  }
+
+  function counts(state) {
+    const stats = state?.stats;
+    if (!stats) return { total: 0, success: 0, skipped: 0, review: 0, completed: 0, pending: 0, needsReview: 0 };
+    return {
+      total: stats.total,
+      success: stats.emitted ?? stats.success,
+      skipped: stats.skipped,
+      review: stats.review,
+      completed: stats.completed,
+      pending: stats.pending,
+      needsReview: stats.needsReview
+    };
+  }
+
+  function render() {
+    const state = readState();
+    const c = counts(state);
+    $('#sf-total').textContent = c.total;
+    $('#sf-success').textContent = c.success;
+    $('#sf-skipped').textContent = c.skipped;
+    $('#sf-review').textContent = c.review;
+    $('#sf-file-name').textContent = state ? state.fileName : 'Ningún archivo cargado';
+    // La autorización G03 pertenece al lote y se restaura tras navegar entre tickets.
+    $('#sf-consent').checked = Boolean(state?.g03Authorized);
+    $('#sf-consent').disabled = state?.runStatus === 'running';
+    $('#sf-progress-label').textContent = `${c.completed} de ${c.total} procesados`;
+    $('#sf-progress-bar').style.width = `${c.total ? (c.completed / c.total) * 100 : 0}%`;
+    $('#sf-current').textContent = state?.currentTicket ? `Ticket actual: ${state.currentTicket}` : '';
+
+    const results = $('#sf-results');
+    results.replaceChildren();
+    (state?.records || []).slice(-10).forEach(record => {
+      const item = document.createElement('div');
+      item.className = 'sf-result';
+      const title = document.createElement('strong');
+      title.textContent = `${record.ticket} — ${STATUS[record.status] || record.status}`;
+      const detail = document.createElement('span');
+      const timingParts = [];
+      if (record.emissionClickedAt) {
+        timingParts.push(`Generar factura: ${formatLocalPreciseTimestamp(record.emissionClickedAt)} (hora local; ISO UTC: ${record.emissionClickedAt})`);
+      }
+      if (record.processingDurationMs !== '' && record.processingDurationMs != null) {
+        timingParts.push(`Preparación hasta el clic: ${formatDurationMs(record.processingDurationMs)}`);
+      }
+      if (record.emissionResponseDurationMs !== '' && record.emissionResponseDurationMs != null) {
+        timingParts.push(`Respuesta Soriana: ${formatDurationMs(record.emissionResponseDurationMs)}`);
+      }
+      if (record.totalProcessingDurationMs !== '' && record.totalProcessingDurationMs != null) {
+        timingParts.push(`Duración total hasta respuesta: ${formatDurationMs(record.totalProcessingDurationMs)}`);
+      }
+      detail.textContent = [record.detail || '', ...timingParts].filter(Boolean).join(' | ');
+      item.append(title, detail);
+      results.appendChild(item);
+    });
+
+    const running = state?.runStatus === 'running';
+    $('#sf-start').disabled = running || !state || (c.pending === 0 && c.needsReview === 0);
+    $('#sf-pause').disabled = !running;
+    $('#sf-skip').disabled = !state || !state.records[state.nextIndex] || state.records[state.nextIndex].status !== 'needs_review';
+    $('#sf-export').disabled = !state;
+    $('#sf-clear').disabled = !state || running;
+  }
+
+  function setPhase(state, phase) {
+    state.phase = phase;
+    state.phaseStartedAt = nowIso();
+    writeState(state);
+  }
+
+  async function waitFor(predicate, timeoutMs, stateAtStart) {
+    const started = Date.now();
+    while (Date.now() - started < timeoutMs) {
+      const current = readState();
+      if (!current || current.runStatus !== 'running') return { kind: 'paused' };
+      const result = predicate();
+      if (result) return result;
+      await sleep(CONFIG.pollMs);
+    }
+    return { kind: 'timeout' };
+  }
+
+  function setInputValue(input, value) {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (!setter) throw new Error('No se pudo acceder al campo del ticket.');
+    setter.call(input, value);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    input.dispatchEvent(new Event('blur', { bubbles: true }));
+  }
+
+  function getTaxProfileCheck(modal) {
+    const container = modal?.querySelector('.datos-factura-contribuyente');
+    if (!container) return { valid: false, reason: 'No se encontró el bloque de datos fiscales en la vista previa.' };
+
+    const fields = new Map();
+    container.querySelectorAll('p').forEach(p => {
+      const label = normalize(p.querySelector('span')?.textContent || '');
+      if (!label) return;
+      const clone = p.cloneNode(true);
+      clone.querySelectorAll('span').forEach(span => span.remove());
+      const value = (clone.textContent || '').trim();
+      fields.set(label, value);
+    });
+
+    const required = ['razon social', 'regimen fiscal', 'rfc', 'codigo postal', 'mail', 'uso de cfdi'];
+    const missing = required.filter(label => {
+      const value = normalize(fields.get(label));
+      return !value || value === 'null' || value === 'undefined' || value === 'selecciona';
+    });
+
+    if (missing.length) {
+      return { valid: false, reason: `La vista previa no contiene todos los datos fiscales requeridos (${missing.join(', ')}). No se emitió.` };
+    }
+
+    const usoCfdi = normalize(fields.get('uso de cfdi'));
+    if (!/^g03\b/.test(usoCfdi)) {
+      return {
+        valid: false,
+        reason: `La vista previa muestra Uso de CFDI "${fields.get('uso de cfdi') || 'sin dato'}" y no G03 Gastos en general. No se emitió el ticket.`
+      };
+    }
+    return { valid: true, reason: 'Datos fiscales presentes y Uso de CFDI G03 confirmado en la vista previa.' };
+  }
+
+  // El selector que interesa es el del formulario del ticket ya validado.
+  // Siempre se busca DENTRO de #billing-form para no tocar controles de otros
+  // módulos, incluidos los que puedan compartir ID/nombre fuera de ese formulario.
+  function getTicketCfdiSelect() {
+    const form = document.querySelector('#billing-form');
+    if (!form || !isVisible(form)) return null;
+
+    const selects = [...form.querySelectorAll('select')].filter(isVisible);
+    const exact = selects.filter(select =>
+      select.id === 'billing-uso-cfdi' || select.name === 'usoCfdi'
+    );
+    if (exact.length) return exact[0];
+
+    // Respaldo si Soriana cambia el ID/name: localizar el select por su etiqueta.
+    return selects.find(select => {
+      const group = select.closest('.form-group, .custom-select-group') || select.parentElement;
+      const label = normalize([...group.querySelectorAll('label')]
+        .map(node => node.textContent || '').join(' '));
+      return label.includes('uso de cfdi');
+    }) || null;
+  }
+
+  function getG03Option(select) {
+    if (!select) return null;
+    return [...select.options].find(option => {
+      const text = normalize(option.textContent);
+      const value = normalize(option.value);
+      return (/^g03\b/.test(text) && /gastos en general/.test(text)) || value === 'g03';
+    }) || null;
+  }
+
+  async function selectG03ForTicket(state, record) {
+    const findTicketForm = () => {
+      const outcome = detectPortalOutcome();
+      if (outcome.kind === 'terminal') return outcome;
+
+      const select = getTicketCfdiSelect();
+      if (!select || !isVisible(select) || select.disabled || select.options.length <= 1) return null;
+      const option = getG03Option(select);
+      return option ? { kind: 'ready', select, option } : { kind: 'missing_g03' };
+    };
+
+    let lastNotice = 0;
+    let fieldResult = null;
+    // El formulario puede tardar más de lo habitual en cargarse. Un timeout
+    // corto solo provoca otro intento: jamás marca el ticket como omitido.
+    while (true) {
+      const current = readState();
+      if (!current || current.runStatus !== 'running') return false;
+      fieldResult = findTicketForm();
+      if (fieldResult) break;
+
+      const elapsed = Date.now() - lastNotice;
+      if (elapsed >= CONFIG.formRetryNoticeMs) {
+        setStatus(`Esperando el formulario fiscal de ${record.ticket}. El ticket se conserva y se seguirá intentando; no se omitirá por demora.`);
+        activateFacturarCompraTab();
+        const currentInput = document.querySelector('#billing-ticket-number');
+        if (currentInput && isVisible(currentInput) && currentInput.value.trim() !== record.ticket) {
+          setInputValue(currentInput, record.ticket);
+        }
+        lastNotice = Date.now();
+      }
+      await sleep(CONFIG.pollMs);
+    }
+
+    if (fieldResult.kind === 'terminal') {
+      handlePortalTerminal(state, record, fieldResult);
+      return false;
+    }
+    if (fieldResult.kind === 'missing_g03') {
+      // Dar tiempo a que el portal termine de poblar las opciones del selector.
+      const optionResult = await waitFor(() => {
+        const select = getTicketCfdiSelect();
+        if (!select || !isVisible(select) || select.disabled || select.options.length <= 1) return null;
+        const option = getG03Option(select);
+        return option ? { kind: 'ready', select, option } : null;
+      }, CONFIG.ticketFormAppearanceTimeoutMs, state);
+      if (optionResult.kind === 'paused') return false;
+      if (optionResult.kind === 'timeout') {
+        setStatus(`El formulario de ${record.ticket} ya apareció, pero sus opciones aún no están completas. Se reintentará el mismo ticket sin omitirlo.`);
+        return false;
+      }
+      fieldResult = optionResult;
+    }
+
+    const { select, option } = fieldResult;
+    if (select.value !== option.value) {
+      const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set;
+      if (!setter) {
+        recordNeedsReview(state, record, 'No se pudo cambiar el selector Uso de CFDI del formulario del ticket. No se emitió.');
+        return false;
+      }
+      setter.call(select, option.value);
+      select.dispatchEvent(new Event('input', { bubbles: true }));
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      select.dispatchEvent(new Event('blur', { bubbles: true }));
+    }
+
+    // Verificar el valor real del control después de que Soriana procese change.
+    const confirmed = await waitFor(() => {
+      const current = getTicketCfdiSelect();
+      const currentOption = current && getG03Option(current);
+      if (current && !current.disabled && currentOption && current.value === currentOption.value) {
+        return { kind: 'confirmed' };
+      }
+      return null;
+    }, 10000, state);
+
+    if (confirmed.kind === 'paused') return false;
+    if (confirmed.kind !== 'confirmed') {
+      recordNeedsReview(state, record,
+        'Soriana no confirmó G03 Gastos en general en el formulario del ticket. No se abrió la vista previa ni se emitió.');
+      return false;
+    }
+
+    setStatus(`G03 Gastos en general seleccionado para el ticket ${record.ticket}.`);
+    return true;
+  }
+
+  // Activa la pestaña interna de Soriana que contiene el formulario de compra.
+  // El selector de clase es el usado por el DOM de la versión 2.8; el respaldo
+  // por texto tolera cambios menores en el marcado del portal.
+  function activateFacturarCompraTab() {
+    const candidates = [
+      document.querySelector('.tab-FacturarCompra'),
+      ...document.querySelectorAll('a, button, [role="tab"], .nav-link')
+    ].filter(Boolean);
+    const tab = candidates.find(element => {
+      const text = normalize(element.innerText || element.textContent || '');
+      return element.matches?.('.tab-FacturarCompra') || /factura tu compra|facturar compra/.test(text);
+    });
+    if (!tab) return false;
+    const target = tab.matches?.('a, button, [role="tab"]')
+      ? tab
+      : (tab.querySelector('a, button, [role="tab"]') || tab);
+    try {
+      target.click();
+      console.info('[SORIFACT] Se activó la pestaña interna Factura tu Compra.');
+      return true;
+    } catch (error) {
+      console.warn('[SORIFACT] No se pudo activar Factura tu Compra:', error);
+      return false;
+    }
+  }
+
+  function isBillingFormReady() {
+    const found = getFormElements();
+    return Boolean(found.form && isVisible(found.form) &&
+      found.input && isVisible(found.input) && found.previewButton);
+  }
+
+  async function ensureBillingFormReady(state, timeoutMs = CONFIG.formRecoveryTimeoutMs) {
+    let lastActivation = 0;
+    let lastNotice = 0;
+    while (true) {
+      const current = readState();
+      if (!current || current.runStatus !== 'running') return { kind: 'paused' };
+      const portalOutcome = detectPortalOutcome();
+      if (portalOutcome.kind === 'terminal') return { kind: 'terminal', outcome: portalOutcome };
+      if (isBillingFormReady()) return { kind: 'ready' };
+
+      const now = Date.now();
+      if (!lastActivation || now - lastActivation >= Math.max(1500, timeoutMs)) {
+        activateFacturarCompraTab();
+        lastActivation = now;
+      }
+      if (!lastNotice || now - lastNotice >= CONFIG.formRetryNoticeMs) {
+        setStatus('Esperando a que Soriana muestre el formulario de facturación. No se avanzará ni se descartará el ticket por esta demora.');
+        lastNotice = now;
+      }
+      await sleep(CONFIG.pollMs);
+    }
+  }
+
+  function getRecordInState(state, record) {
+    if (!state || !Array.isArray(state.records) || !record) return null;
+    const current = state.records[state.nextIndex];
+    if (current && current.ticket === record.ticket) return current;
+    return findRecordByTicket(state, record.ticket, item =>
+      ['pending', 'needs_review', 'emission_error'].includes(item.status)
+    );
+  }
+
+  function retrySameTicket(state, record, detail) {
+    const liveState = readState() || state;
+    const stored = getRecordInState(liveState, record);
+    if (!stored || stored.emissionInvokedAt || stored.status === 'success') return false;
+    stored.status = 'pending';
+    stored.detail = String(detail || 'Se reintentará el mismo ticket.').slice(0, 500);
+    liveState.currentTicket = stored.ticket;
+    liveState.phase = 'recovering_form';
+    liveState.phaseStartedAt = nowIsoMicroseconds();
+    liveState.runStatus = 'running';
+    liveState.lastMessage = `${stored.ticket}: ${stored.detail} Se conserva el ticket y se volverá a intentar.`;
+    writeState(liveState);
+    render();
+    setStatus(liveState.lastMessage);
+    return true;
+  }
+
+  function recordNeedsReview(state, record, detail) {
+    // Los errores previos a la emisión no deben detener el lote. Se documenta
+    // el ticket como omitido y se adelanta el índice; el siguiente intento
+    // volverá a activar Factura tu Compra si el formulario no está disponible.
+    return advanceAndContinue(state, record, 'auto_skipped', detail);
+  }
+
+  function hideBillingModal(modal) {
+    if (!modal) return;
+    try {
+      if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+        window.jQuery(modal).modal('hide');
+      }
+    } catch (error) {
+      console.warn('[SORIFACT] No se pudo cerrar el modal con Bootstrap:', error);
+    }
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+    modal.removeAttribute('aria-modal');
+    modal.style.display = 'none';
+  }
+
+  // Captura por adelantado las referencias del formulario mientras el modal
+  // de vista previa sigue abierto. Si Soriana reemplaza algún nodo, la
+  // restauración detecta la referencia desconectada y vuelve a localizarla.
+  function captureBillingFormRefs() {
+    return {
+      form: document.querySelector('#billing-form'),
+      input: document.querySelector('#billing-ticket-number'),
+      billingView: document.querySelector('.renderFacturarCompra'),
+      billingTab: document.querySelector('.tab-FacturarCompra'),
+      success: document.querySelector('.billing-generated-success'),
+      error: document.querySelector('.billing-generated-error'),
+      previewButton: document.querySelector('#previzualizar-factura'),
+      serviceMessage: document.querySelector('#service-error-message'),
+      facturaModal: document.querySelector('#factura-modal'),
+      alreadyModal: document.querySelector('#ticket-facturado-modal')
+    };
+  }
+
+  // Soriana conserva el formulario en el DOM, pero al completar la emisión
+  // oculta el bloque de captura y muestra .billing-generated-success. Se
+  // restaura ese mismo formulario; no se navega ni se vuelve a cargar la página.
+  function restoreBillingFormForNextTicket(preparedRefs = null) {
+    const ref = (key, selector) => {
+      const cached = preparedRefs?.[key];
+      return cached?.isConnected ? cached : document.querySelector(selector);
+    };
+    const form = ref('form', '#billing-form');
+    const input = ref('input', '#billing-ticket-number');
+    const billingView = ref('billingView', '.renderFacturarCompra');
+    const billingTab = ref('billingTab', '.tab-FacturarCompra');
+    if (!form || !input || !billingView) {
+      activateFacturarCompraTab();
+      return false;
+    }
+
+    const success = ref('success', '.billing-generated-success');
+    const error = ref('error', '.billing-generated-error');
+    if (success) {
+      // No fijar display:none ni hidden: Soriana debe poder volver a alternar
+      // su clase d-none en la próxima emisión para que el observer la detecte.
+      success.classList.add('d-none');
+      success.hidden = false;
+      success.style.removeProperty('display');
+    }
+    if (error) {
+      error.classList.add('d-none');
+      error.hidden = false;
+      error.style.removeProperty('display');
+    }
+
+    [billingTab, billingView, form].filter(Boolean).forEach(element => {
+      element.classList.remove('d-none');
+      element.hidden = false;
+      element.style.removeProperty('display');
+    });
+
+    // Cierra únicamente los modales propios del flujo de facturación.
+    hideBillingModal(ref('facturaModal', '#factura-modal'));
+    hideBillingModal(ref('alreadyModal', '#ticket-facturado-modal'));
+    if (!document.querySelector('.modal.show')) {
+      document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+    }
+
+    // Conserva el bloque original del número de ticket y el texto de campos
+    // obligatorios; elimina solo controles dinámicos generados para el ticket anterior.
+    const fieldsRow = form.querySelector('.billing-form-fields');
+    if (fieldsRow) {
+      const ticketColumn = input.closest('.form-group')?.parentElement;
+      [...fieldsRow.children].forEach(child => {
+        if (child === ticketColumn || child.classList.contains('required-fields-msg') || child.contains(input)) return;
+        child.remove();
+      });
+    }
+
+    try { form.reset(); } catch (_) { /* el formulario puede contener controles dinámicos */ }
+    const inputSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (inputSetter) inputSetter.call(input, '');
+    else input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+
+    form.classList.remove('was-validated');
+    form.querySelectorAll('.invalid-feedback').forEach(node => {
+      node.textContent = '';
+      node.classList.remove('d-block');
+    });
+    form.querySelectorAll('.is-invalid').forEach(node => node.classList.remove('is-invalid'));
+
+    const previewButton = ref('previewButton', '#previzualizar-factura');
+    if (previewButton) {
+      previewButton.disabled = true;
+      previewButton.classList.add('d-none');
+    }
+
+    const serviceMessage = ref('serviceMessage', '#service-error-message');
+    if (serviceMessage) serviceMessage.textContent = '';
+
+    const restored = isVisible(form) && isVisible(input);
+    if (!restored) activateFacturarCompraTab();
+    return restored;
+  }
+
+  function installSuccessMessageBlocker() {
+    const styleId = 'sorifact-block-success-message';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      .renderFacturarCompra .billing-generated-success,
+      .billing-generated-success {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    `;
+    (document.head || document.documentElement).appendChild(style);
+  }
+
+  function finalizeCountedEmission(ticket, responseDurationMs, preparedRefs, networkResult) {
+    const state = readState();
+    if (!state) return false;
+    const storedRecord = findRecordByTicket(state, ticket, item => item.emissionInvokedAt || item.status === 'success') || findRecordByTicket(state, ticket);
+    if (storedRecord) {
+      storedRecord.emissionResponseDurationMs = Number(responseDurationMs.toFixed(3));
+      if (Number.isFinite(Number(storedRecord.processingDurationMs))) {
+        storedRecord.totalProcessingDurationMs = Number((Number(storedRecord.processingDurationMs) + responseDurationMs).toFixed(3));
+      }
+      if (networkResult?.timedOut) {
+        storedRecord.detail = `${storedRecord.detail || ''} La actividad de red siguió activa al alcanzar el límite de seguridad; no se esperó el mensaje de confirmación y el ticket no se repetirá.`.slice(0, 500);
+      } else {
+        storedRecord.detail = `${storedRecord.detail || ''} Mensaje de éxito oculto; siguiente ticket tras quedar inactiva la solicitud de emisión.`.slice(0, 500);
+      }
+    }
+
+    // La solicitud ya terminó o alcanzó el límite de seguridad: ahora se limpia
+    // y reutiliza el formulario. El panel de éxito nunca dirige el flujo.
+    const restoreStartedAt = performance.now();
+    const formRestored = restoreBillingFormForNextTicket(preparedRefs);
+    const restoreDurationMs = performance.now() - restoreStartedAt;
+
+    state.currentTicket = '';
+    state.phase = state.runStatus === 'running'
+      ? (formRestored ? 'idle' : 'recovering_form')
+      : 'paused';
+    state.phaseStartedAt = nowIsoMicroseconds();
+    state.lastMessage = `${ticket}: clic contabilizado. ${formRestored ? 'Formulario restablecido.' : 'Activando Factura tu Compra para recuperar el formulario.'} No se esperó el mensaje de Soriana.`;
+    writeState(state);
+    render();
+    if (!formRestored) activateFacturarCompraTab();
+    setStatus(state.lastMessage);
+
+    console.info('[SORIFACT] Transición entre tickets sin confirmación visual:', {
+      ticket,
+      esperaRedMs: responseDurationMs,
+      restauracionFormularioMs: Number(restoreDurationMs.toFixed(3)),
+      limiteRedAlcanzado: Boolean(networkResult?.timedOut),
+      solicitudesAunActivas: networkResult?.pendingCount ?? 0
+    });
+    return formRestored;
+  }
+
+  function continueAfterCountedEmission(ticket, detail, responseDurationMs = null) {
+    const state = readState();
+    if (!state) return false;
+    const storedRecord = findRecordByTicket(state, ticket, item => item.emissionInvokedAt || item.status === 'success') || findRecordByTicket(state, ticket);
+    if (storedRecord) {
+      storedRecord.detail = `${storedRecord.detail || ''} ${detail}`.trim().slice(0, 500);
+      storedRecord.emissionResponseIssueAt = nowIsoMicroseconds();
+      if (Number.isFinite(responseDurationMs)) {
+        storedRecord.emissionResponseDurationMs = Number(responseDurationMs.toFixed(3));
+        if (Number.isFinite(Number(storedRecord.processingDurationMs))) {
+          storedRecord.totalProcessingDurationMs = Number((Number(storedRecord.processingDurationMs) + responseDurationMs).toFixed(3));
+        }
+      }
+    }
+    // El clic ya se contabilizó. Una respuesta ausente o errónea no autoriza
+    // repetir el ticket ni detener los demás: se recupera la pestaña y se sigue.
+    if (state.runStatus !== 'running') {
+      // El usuario pulsó Pausar durante la espera; no se reactiva a escondidas.
+      state.phase = 'paused_after_emission';
+      writeState(state);
+      render();
+      setStatus(`${detail} El lote permanece pausado por solicitud del usuario.`);
+      return false;
+    }
+    state.phase = 'recovering_form';
+    state.currentTicket = '';
+    state.phaseStartedAt = nowIsoMicroseconds();
+    state.lastMessage = `${detail} Se continuará con el siguiente ticket sin volver a emitir el actual.`;
+    writeState(state);
+    render();
+    setStatus(state.lastMessage);
+    if (!restoreBillingFormForNextTicket()) activateFacturarCompraTab();
+    return true;
+  }
+
+  // No se observa ni se espera el mensaje de éxito de Soriana. El avance se
+  // controla por el clic contabilizado y el cierre pasivo de la solicitud HTTP.
+  function advanceAndContinue(state, record, status, detail) {
+    const liveState = readState();
+    if (!liveState || liveState.runStatus !== 'running') return false;
+    state = liveState;
+    const storedRecord = getRecordInState(state, record);
+    if (!storedRecord) {
+      state.runStatus = 'paused';
+      state.phase = 'paused_persistence_error';
+      state.lastMessage = `No se encontró el ticket ${record?.ticket || ''} dentro del lote persistido. Se pausó para no perder ni duplicar el avance.`;
+      writeState(state);
+      render();
+      setStatus(state.lastMessage);
+      return false;
+    }
+
+    storedRecord.status = status;
+    storedRecord.detail = String(detail || STATUS[status] || '').slice(0, 500);
+    storedRecord.completedAt = nowIsoMicroseconds();
+    if (status === 'success' && !storedRecord.emissionInvokedAt) {
+      storedRecord.emissionInvokedAt = storedRecord.emissionClickedAt || storedRecord.completedAt;
+    }
+
+    const completedIndex = getRecordIndex(state, storedRecord);
+    state.nextIndex = Math.max(Number(state.nextIndex) || 0, completedIndex + 1);
+    state.currentTicket = '';
+    state.phase = 'recovering_form';
+    state.phaseStartedAt = nowIsoMicroseconds();
+    state.runStatus = 'running';
+    state.lastMessage = `${storedRecord.ticket}: ${STATUS[status] || status}. Recuperando Factura tu Compra y continuando con el siguiente ticket.`;
+
+    const persisted = writeState(state);
+    render();
+    setStatus(state.lastMessage);
+    if (!persisted) {
+      state.runStatus = 'paused';
+      state.phase = 'paused_persistence_error';
+      state.lastMessage = 'No se pudo guardar el resultado. El lote se pausó para evitar repetir o perder tickets.';
+      writeState(state);
+      render();
+      setStatus(state.lastMessage);
+      return false;
+    }
+
+    // Recuperación inmediata, sin recargar página. Si el DOM todavía no está
+    // listo, el siguiente ciclo llamará ensureBillingFormReady y tocará la pestaña.
+    const restored = restoreBillingFormForNextTicket();
+    if (!restored) activateFacturarCompraTab();
+    const resumed = readState();
+    if (resumed) {
+      resumed.currentTicket = '';
+      resumed.phase = resumed.runStatus === 'running' ? (restored ? 'idle' : 'recovering_form') : 'paused';
+      resumed.phaseStartedAt = nowIsoMicroseconds();
+      writeState(resumed);
+      render();
+    }
+    setStatus(`${record.ticket}: ${STATUS[status] || status}. ${restored ? 'Formulario restablecido.' : 'Se activó Factura tu Compra para recuperar el formulario.'} Continúa el siguiente ticket.`);
+    return true;
+  }
+
+  function handlePortalTerminal(state, record, outcome) {
+    // Incluso los errores del portal quedan registrados y el lote pasa al
+    // siguiente ticket. No se vuelve a intentar el ticket que ya respondió.
+    return advanceAndContinue(state, record, outcome.status, outcome.detail);
+  }
+
+
+  function advanceAndContinueAfterClick(state, record, status, detail, clickMoment, processingDurationMs) {
+    const storedRecord = getRecordInState(state, record);
+    if (!storedRecord) {
+      state.runStatus = 'paused';
+      state.phase = 'paused_persistence_error';
+      state.lastMessage = `No se encontró el ticket ${record?.ticket || ''} en el lote. No se puede contabilizar con seguridad.`;
+      writeState(state);
+      render();
+      setStatus(state.lastMessage);
+      return false;
+    }
+
+    storedRecord.status = status;
+    storedRecord.detail = String(detail || STATUS[status] || '').slice(0, 500);
+    storedRecord.completedAt = nowIsoMicroseconds();
+    storedRecord.emissionClickedAt = clickMoment?.iso || nowIsoMicroseconds();
+    storedRecord.emissionInvokedAt = storedRecord.emissionClickedAt;
+    if (Number.isFinite(processingDurationMs)) {
+      storedRecord.processingDurationMs = Number(processingDurationMs.toFixed(3));
+    }
+
+    const completedIndex = getRecordIndex(state, storedRecord);
+    state.nextIndex = Math.max(Number(state.nextIndex) || 0, completedIndex + 1);
+    // El índice queda apuntando al siguiente; se conserva awaiting_emission_result
+    // para que una recarga sepa que el clic ya fue contabilizado.
+    state.currentTicket = record.ticket;
+    state.phase = 'awaiting_emission_result';
+    state.phaseStartedAt = nowIsoMicroseconds();
+    state.runStatus = 'running';
+    state.lastMessage = `${storedRecord.ticket}: ${STATUS[status]}. Clic contabilizado; esperando solo el cierre de la solicitud para reutilizar el formulario.`;
+
+    const persisted = writeState(state);
+    render();
+    setStatus(state.lastMessage);
+    if (!persisted) {
+      state.runStatus = 'paused';
+      state.phase = 'paused_persistence_error';
+      state.lastMessage = 'No se pudo guardar el conteo de la emisión. El lote se pausó para evitar duplicados.';
+      writeState(state);
+      render();
+      setStatus(state.lastMessage);
+      return false;
+    }
+    return true;
+  }
+
+  async function processCurrentTicket() {
+    let state = readState();
+    if (!state || state.runStatus !== 'running') return;
+
+    // Avanzar filas invalidadas/duplicadas localmente sin llamar al portal.
+    while (state.nextIndex < state.records.length) {
+      const candidate = state.records[state.nextIndex];
+      if (candidate.status === 'pending') break;
+      state.nextIndex += 1;
+    }
+    writeState(state);
+    render();
+
+    if (state.nextIndex >= state.records.length) {
+      state.runStatus = 'finished';
+      state.phase = 'finished';
+      state.currentTicket = '';
+      writeState(state);
+      render();
+      setStatus('Lote terminado. Exporta el CSV de resultados para conservar el reporte.');
+      return;
+    }
+
+    const record = state.records[state.nextIndex];
+    state.currentTicket = record.ticket;
+    record.status = 'pending';
+    record.processingStartedAt = nowIsoMicroseconds();
+    const ticketStartedPerf = performance.now();
+    setPhase(state, 'typing');
+    render();
+
+    try {
+      // Detectar respuestas de Soriana antes de cambiar de vista.
+      const beforeTyping = detectPortalOutcome();
+      if (beforeTyping.kind === 'terminal') {
+        handlePortalTerminal(state, record, beforeTyping);
+        return;
+      }
+
+      const formReadiness = await ensureBillingFormReady(state, CONFIG.formRecoveryTimeoutMs);
+      if (formReadiness.kind === 'paused') return;
+      if (formReadiness.kind === 'terminal') {
+        handlePortalTerminal(state, record, formReadiness.outcome);
+        return;
+      }
+      if (formReadiness.kind !== 'ready') {
+        retrySameTicket(state, record, 'El formulario aún no está disponible. Se reintentará en lugar de avanzar.');
+        return;
+      }
+      const elements = getFormElements();
+
+      setInputValue(elements.input, record.ticket);
+      setStatus(`Validando ticket ${record.ticket} en Soriana…`);
+      render();
+
+      // Cada ticket vuelve a aplicar G03 en su propio formulario, usando el
+      // RFC predeterminado que el usuario ya seleccionó en la cuenta.
+      const g03Selected = await selectG03ForTicket(state, record);
+      if (!g03Selected) return;
+
+      const readiness = await waitFor(() => {
+        const outcome = detectPortalOutcome();
+        if (outcome.kind === 'terminal') return outcome;
+        const button = document.querySelector('#previzualizar-factura');
+        if (button && isVisible(button) && !button.disabled) return { kind: 'preview_ready' };
+        return null;
+      }, CONFIG.ticketTimeoutMs, state);
+
+      if (readiness.kind === 'paused') return;
+      if (readiness.kind === 'timeout') {
+        const err = getVisibleErrorText();
+        if (err) {
+          recordNeedsReview(state, record, `Respuesta no reconocida del portal: ${err.slice(0, 350)}`);
+        } else {
+          retrySameTicket(state, record, 'Soriana no habilitó la previsualización y no mostró un error definitivo. Se recuperará el formulario y se reintentará este mismo ticket; no se emitió.');
+        }
+        return;
+      }
+      if (readiness.kind === 'terminal') {
+        handlePortalTerminal(state, record, readiness);
+        return;
+      }
+
+      const currentState = readState();
+      if (!currentState || currentState.runStatus !== 'running') return;
+      setPhase(currentState, 'previewing');
+      setStatus(`Generando vista previa del ticket ${record.ticket}…`);
+      elements.previewButton.click();
+
+      const previewResult = await waitFor(() => {
+        const outcome = detectPortalOutcome();
+        if (outcome.kind === 'terminal') return outcome;
+        const modal = document.querySelector('#factura-modal');
+        if (isVisible(modal) && modal.querySelector('#emitir-factura')) return { kind: 'preview_ready', modal };
+        return null;
+      }, CONFIG.previewTimeoutMs, currentState);
+
+      if (previewResult.kind === 'paused') return;
+      if (previewResult.kind === 'timeout') {
+        retrySameTicket(currentState, record, 'No se confirmó la vista previa y todavía no se pulsó Generar factura. Se reintentará este mismo ticket.');
+        return;
+      }
+      if (previewResult.kind === 'terminal') {
+        handlePortalTerminal(currentState, record, previewResult);
+        return;
+      }
+
+      const profile = getTaxProfileCheck(previewResult.modal);
+      if (!profile.valid) {
+        recordNeedsReview(currentState, record, profile.reason);
+        return;
+      }
+
+      const emitButton = previewResult.modal.querySelector('#emitir-factura');
+      if (!emitButton || emitButton.disabled || !isVisible(emitButton)) {
+        recordNeedsReview(currentState, record, 'El botón de emisión no está disponible en la vista previa. No se emitió.');
+        return;
+      }
+
+      // Captura las referencias del formulario antes de que Soriana cambie
+      // la vista al finalizar la solicitud de emisión.
+      const reusableFormRefs = captureBillingFormRefs();
+
+      const latest = readState();
+      if (!latest || latest.runStatus !== 'running') return;
+      setPhase(latest, 'emitting');
+      setStatus(`Ejecutando Generar factura y contabilizando el ticket ${record.ticket}…`);
+
+      const attemptMoment = preciseTimestamp();
+      const liveRecord = getRecordInState(latest, record);
+      if (liveRecord) {
+        liveRecord.emissionClickAttemptedAt = attemptMoment.iso;
+        writeState(latest);
+      }
+
+      // Marca la actividad de red justo antes del clic. No se consulta ni se
+      // espera el texto de éxito de Soriana; solo se respeta un intervalo mínimo
+      // y que las solicitudes iniciadas por esta emisión hayan quedado inactivas.
+      const networkMarker = portalNetworkMonitor.mark();
+      const clickMoment = preciseTimestamp();
+      try {
+        emitButton.click();
+      } catch (clickError) {
+        if (liveRecord) liveRecord.emissionClickFailedAt = nowIsoMicroseconds();
+        recordNeedsReview(latest, record,
+          `No se pudo ejecutar el botón Generar factura del modal: ${String(clickError?.message || clickError).slice(0, 250)}. El ticket se omitió y el lote continuará.`);
+        return;
+      }
+
+      const counted = advanceAndContinueAfterClick(
+        latest,
+        record,
+        'success',
+        'Contabilizada al ejecutarse el botón Generar factura; el mensaje visual de éxito no controla el avance.',
+        clickMoment,
+        clickMoment.monotonicMs - ticketStartedPerf
+      );
+      if (!counted) return;
+
+      const networkResult = await portalNetworkMonitor.waitUntilQuiet(networkMarker, {
+        minMs: CONFIG.postEmissionMinWaitMs,
+        quietMs: CONFIG.postEmissionQuietMs,
+        maxMs: CONFIG.postEmissionMaxWaitMs
+      });
+      const responseDurationMs = Number(Math.max(0,
+        performance.now() - clickMoment.monotonicMs).toFixed(3));
+      finalizeCountedEmission(record.ticket, responseDurationMs, reusableFormRefs, networkResult);
+      return;
+
+    } catch (error) {
+      console.error('[SORIFACT] Error durante el procesamiento:', error);
+      const latest = readState() || state;
+      const savedRecord = findRecordByTicket(latest, record.ticket);
+      if (savedRecord?.emissionInvokedAt || (savedRecord?.status === 'success')) {
+        continueAfterCountedEmission(record.ticket, `Interrupción después de ejecutar Generar factura: ${String(error?.message || error).slice(0, 250)}. El ticket no se repetirá; se continúa con el siguiente.`, null);
+      } else {
+        retrySameTicket(latest, record, `Error técnico antes de emitir: ${String(error?.message || error).slice(0, 250)}. Se recuperará el formulario y se reintentará el mismo ticket.`);
+      }
+    }
+  }
+
+  async function runLoop() {
+    if (loopActive) return;
+    loopActive = true;
+    try {
+      while (true) {
+        const state = readState();
+        if (!state || state.runStatus !== 'running') break;
+        if (state.nextIndex >= state.records.length) {
+          state.runStatus = 'finished';
+          state.phase = 'finished';
+          state.currentTicket = '';
+          writeState(state);
+          render();
+          setStatus('Lote terminado. Exporta el CSV de resultados.');
+          break;
+        }
+        await processCurrentTicket();
+        const after = readState();
+        if (!after || after.runStatus !== 'running') break;
+        if (after.phase === 'navigating') {
+          after.phase = 'recovering_form';
+          after.currentTicket = '';
+          writeState(after);
+        }
+        // Si no hubo emisión ni error definitivo del portal, conservar y reintentar
+        // el mismo ticket. Nunca avanzar por una simple demora o fallo técnico.
+        if (after.nextIndex === state.nextIndex && after.records[after.nextIndex]?.status === 'pending') {
+          const pendingRecord = after.records[after.nextIndex];
+          retrySameTicket(after, pendingRecord,
+            pendingRecord.detail || 'La iteración terminó sin respuesta definitiva. Se reintentará el mismo ticket.');
+          await sleep(500);
+        }
+      }
+    } catch (loopError) {
+      console.error('[SORIFACT] Interrupción del ciclo automático:', loopError);
+      const recovered = readState();
+      if (recovered?.runStatus === 'running') {
+        const current = recovered.records[recovered.nextIndex];
+        if (current?.status === 'pending') {
+          retrySameTicket(recovered, current,
+            `Error general del ciclo: ${String(loopError?.message || loopError).slice(0, 220)}. Se reintentará el mismo ticket.`);
+        } else {
+          recovered.phase = 'recovering_form';
+          recovered.currentTicket = '';
+          writeState(recovered);
+        }
+        window.setTimeout(() => {
+          if (readState()?.runStatus === 'running') runLoop();
+        }, 250);
+      }
+    } finally {
+      loopActive = false;
+      render();
+    }
+  }
+
+  function exportResults() {
+    const state = readState();
+    if (!state) return;
+    const header = ['ticket', 'estado', 'detalle', 'fila_csv', 'fecha_importacion', 'fecha_inicio_proceso', 'fecha_hora_generar_factura_utc_microsegundos', 'tiempo_hasta_generar_factura_ms', 'tiempo_respuesta_soriana_ms', 'tiempo_total_hasta_respuesta_ms', 'fecha_resultado'];
+    const rows = [header, ...state.records.map(record => [
+      record.ticket,
+      STATUS[record.status] || record.status,
+      record.detail || '',
+      record.sourceRow || '',
+      state.importedAt,
+      record.processingStartedAt || '',
+      record.emissionClickedAt || '',
+      record.processingDurationMs ?? '',
+      record.emissionResponseDurationMs ?? '',
+      record.totalProcessingDurationMs ?? '',
+      record.completedAt || ''
+    ])];
+    const csv = rows.map(row => row.map(value => {
+      const cell = String(value ?? '');
+      return /[",\r\n;]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell;
+    }).join(',')).join('\r\n');
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `sorifact_resultados_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  $('#sf-collapse').addEventListener('click', () => {
+    panel.classList.toggle('sf-collapsed');
+  });
+
+  $('#sf-consent').addEventListener('change', event => {
+    const state = readState();
+    if (!state || state.runStatus === 'running') {
+      event.target.checked = Boolean(state?.g03Authorized);
+      return;
+    }
+    state.g03Authorized = event.target.checked === true;
+    state.g03AuthorizedAt = state.g03Authorized ? (state.g03AuthorizedAt || nowIso()) : null;
+    writeState(state);
+    render();
+    setStatus(state.g03Authorized
+      ? 'Autorización G03 guardada para todo este lote. Ya no se solicitará por cada ticket.'
+      : 'Autorización G03 desactivada. Debes marcarla para iniciar el lote.');
+  });
+
+  $('#sf-file').addEventListener('change', async event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const current = readState();
+    if (current?.runStatus === 'running') {
+      setStatus('Pausa el lote antes de cargar otro CSV.');
+      event.target.value = '';
+      return;
+    }
+    try {
+      const text = await file.text();
+      const state = importCsvText(text, file.name);
+      if (current && !window.confirm('Cargar este CSV reemplazará el lote y su progreso actual. ¿Continuar?')) {
+        event.target.value = '';
+        return;
+      }
+      writeState(state);
+      render();
+      const c = counts(state);
+      const candidates = state.records.filter(r => r.status !== 'duplicate').length;
+      setStatus(`CSV cargado desde B9: ${c.total} códigos de 20 dígitos detectados; ${candidates} tickets candidatos (sin contar duplicados).`);
+    } catch (error) {
+      setStatus(`No se pudo importar el CSV: ${error.message}`);
+    }
+    event.target.value = '';
+  });
+
+  $('#sf-start').addEventListener('click', () => {
+    const state = readState();
+    if (!state) {
+      setStatus('Primero carga un CSV.');
+      return;
+    }
+    if ($('#sf-consent').checked !== true && state.g03Authorized !== true) {
+      setStatus('Marca una sola vez la autorización G03 para todos los tickets de este lote.');
+      return;
+    }
+    // El formulario puede estar oculto en otra pestaña: el lote lo recuperará
+    // activando Factura tu Compra al procesar el primer ticket.
+    const pending = counts(state).pending;
+    if (!pending) {
+      setStatus('No hay tickets pendientes.');
+      return;
+    }
+    const accepted = window.confirm(
+      `Se procesarán ${pending} tickets pendientes.\n\n` +
+      'La autorización G03 se ha concedido una sola vez y se aplicará a todos los tickets de este lote. El script seleccionará G03 en el formulario de cada ticket y comprobará que la vista previa muestre G03.\n\n' +
+      'Cuando se ejecute Generar factura, el ticket se contabilizará inmediatamente con hora exacta a microsegundos. Ante errores o falta del formulario, el script tocará Factura tu Compra, registrará y omitirá el ticket afectado cuando no sea posible recuperarlo, y continuará con los siguientes sin pedir reiniciar el lote. No se modificarán Mis datos fiscales ni la facturación recurrente. ¿Iniciar lote?'
+    );
+    if (!accepted) return;
+    // Una sola autorización para todo el lote, conservada en el mismo sitio sin recargas.
+    state.g03Authorized = true;
+    state.g03AuthorizedAt = state.g03AuthorizedAt || nowIso();
+    state.runStatus = 'running';
+    state.phase = 'idle';
+    state.lastMessage = 'Lote iniciado con autorización G03 única para todos los tickets.';
+    writeState(state);
+    render();
+    runLoop();
+  });
+
+  $('#sf-pause').addEventListener('click', () => {
+    const state = readState();
+    if (!state || state.runStatus !== 'running') return;
+    const record = state.records[state.nextIndex];
+    state.runStatus = 'paused';
+    if (state.phase === 'awaiting_emission_result') {
+      state.phase = 'paused_after_emission';
+      state.lastMessage = `Se contabilizó el clic de emisión para ${state.currentTicket || 'el último ticket'}. Se pausó antes de procesar el siguiente; espera a que Soriana termine y revisa el resultado.`;
+    } else if (record && ['typing', 'previewing', 'emitting'].includes(state.phase)) {
+      record.status = 'needs_review';
+      record.detail = 'El lote se pausó durante una operación. Verifica el estado en Soriana antes de continuar para evitar una emisión duplicada.';
+      record.completedAt = nowIsoMicroseconds();
+      state.phase = 'paused_for_review';
+      state.lastMessage = record.detail;
+    } else {
+      state.phase = 'paused';
+      state.lastMessage = 'Lote pausado por el usuario.';
+    }
+    writeState(state);
+    render();
+    setStatus(state.lastMessage);
+  });
+
+  $('#sf-skip').addEventListener('click', () => {
+    const state = readState();
+    const record = state?.records[state.nextIndex];
+    if (!state || !record || record.status !== 'needs_review') return;
+    if (!window.confirm(`¿Marcar ${record.ticket} como omitido? Revisa antes si ya se generó una factura.`)) return;
+    record.status = 'manual_skip';
+    record.detail = `${record.detail} | Omitido manualmente por el usuario.`.slice(0, 500);
+    record.completedAt = nowIsoMicroseconds();
+    state.nextIndex += 1;
+    state.currentTicket = '';
+    state.phase = 'idle';
+    state.runStatus = 'paused';
+    writeState(state);
+    render();
+    setStatus('Ticket omitido. Pulsa Iniciar lote para continuar.');
+  });
+
+  $('#sf-export').addEventListener('click', exportResults);
+
+  $('#sf-clear').addEventListener('click', () => {
+    const state = readState();
+    if (state?.runStatus === 'running') return;
+    if (!window.confirm('¿Borrar el lote y todos sus resultados de esta pestaña?')) return;
+    localStorage.removeItem(CONFIG.storageKey);
+    sessionStorage.removeItem(CONFIG.storageKey);
+    removeChunkKeys(localStorage);
+    removeChunkKeys(sessionStorage);
+    stateStorage = null;
+    persistedChunkCount = 0;
+    stateCache = null;
+    stateCacheLoaded = true;
+    for (const legacyKey of CONFIG.legacyStorageKeys) {
+      localStorage.removeItem(legacyKey);
+      sessionStorage.removeItem(legacyKey);
+    }
+    $('#sf-consent').checked = false;
+    render();
+    setStatus('Lote borrado.');
+  });
+
+  // Oculta solo el panel visual; no intercepta ni cancela la solicitud al servidor.
+  installSuccessMessageBlocker();
+
+  // Recuperación automática al iniciar el userscript después de una recarga.
+  // Si el botón ya había sido ejecutado, el ticket se conserva contabilizado
+  // y nunca se vuelve a emitir. Si la interrupción fue previa al clic, el ticket
+  // permanece pendiente y se reintenta; solo un clic incierto de emisión se aparta
+  // para evitar una factura duplicada.
+  const startupState = readState();
+  if (startupState?.runStatus === 'running') {
+    if (startupState.phase === 'awaiting_emission_result') {
+      const emitted = findRecordByTicket(startupState, startupState.currentTicket);
+      if (emitted) {
+        emitted.detail = `${emitted.detail || ''} La página se recargó antes de recibir la respuesta final; el clic ya estaba contabilizado y no se repetirá.`.slice(0, 500);
+        emitted.emissionResponseIssueAt = nowIsoMicroseconds();
+      }
+      startupState.phase = 'recovering_form';
+      startupState.currentTicket = '';
+      startupState.runStatus = 'running';
+      startupState.lastMessage = 'Interrupción después del clic de emisión: el ticket permanece contabilizado. Recuperando Factura tu Compra y continuando con el siguiente.';
+    } else {
+      const record = startupState.records[startupState.nextIndex];
+      if (record && record.status === 'pending' &&
+          ['typing', 'previewing', 'emitting'].includes(startupState.phase)) {
+        if (startupState.phase === 'emitting' && record.emissionClickAttemptedAt && !record.emissionInvokedAt) {
+          // El navegador pudo interrumpirse justo después del clic; se evita
+          // duplicar una factura aunque el resultado todavía sea incierto.
+          record.status = 'needs_review';
+          record.detail = 'La página se interrumpió mientras se ejecutaba Generar factura. El estado del clic es incierto; no se repetirá este ticket y el lote avanzará al siguiente para evitar duplicados.';
+          record.completedAt = nowIsoMicroseconds();
+          startupState.nextIndex = Math.min(startupState.records.length, startupState.nextIndex + 1);
+        } else {
+          record.status = 'pending';
+          record.detail = `Interrupción durante la fase ${startupState.phase}. No se había pulsado Generar factura; se reintentará el mismo ticket.`;
+        }
+      }
+      startupState.phase = 'recovering_form';
+      startupState.currentTicket = '';
+      startupState.runStatus = 'running';
+      startupState.lastMessage = 'Lote recuperado después de una interrupción. Activando Factura tu Compra y continuando automáticamente.';
+    }
+    writeState(startupState);
+    render();
+    setStatus(startupState.lastMessage);
+    activateFacturarCompraTab();
+    window.setTimeout(runLoop, 180);
+  } else {
+    render();
+  }
+
+  console.info('[SORIFACT] Batch v2.8.13 cargado. Bloquea navegación fuera de Facturación Soriana, activa Factura tu Compra y conserva el avance automático y tiempos precisos.');
+})();
